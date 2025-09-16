@@ -1,0 +1,50 @@
+{
+  "info": {
+    "name": "BlocAudit Notify Limits",
+    "_postman_id": "9a3d41d8-0000-4e3f-9f11-123456789abc",
+    "description": "Test invoke for Supabase Edge Function notify-limits",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Invoke notify-limits",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{SERVICE_ROLE_KEY}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"company_id\": \"3ea4379e-4f15-41a0-9c5e-29ce1f807210\"\n}"
+        },
+        "url": {
+          "raw": "https://zjguegunedvuogqoiwzg.functions.supabase.co/notify-limits",
+          "protocol": "https",
+          "host": [
+            "zjguegunedvuogqoiwzg",
+            "functions",
+            "supabase",
+            "co"
+          ],
+          "path": [
+            "notify-limits"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "SERVICE_ROLE_KEY",
+      "value": "pune-cheia-ta-de-la-Supabase-API-Keys-aici"
+    }
+  ]
+}

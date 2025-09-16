@@ -1,0 +1,50 @@
+{
+  "info": {
+    "name": "BlocAudit - Supabase Functions",
+    "_postman_id": "e0a1b260-1234-5678-9012-abcdef123456",
+    "description": "Colecție pentru testarea funcțiilor Supabase (BlocAudit)",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "check-usage-limits",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          },
+          {
+            "key": "Authorization",
+            "value": "Bearer {{eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imtzd2dkYm9ydnV5eWluemRscWttIiwicm9sZSI6InNlcnZpY2Vfcm9sZSIsImlhdCI6MTc1NjczNjQxMiwiZXhwIjoyMDcyMzEyNDEyfQ.S43hw9loPq5qbseRf8yi2P589WHBnoxFT7Rtj4vN5A4}}"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"company_id\": \"UUID_COMPANIE\"\n}"
+        },
+        "url": {
+          "raw": "https://kswgdborvuyyinzdlqkm.functions.supabase.co/check-usage-limits",
+          "protocol": "https",
+          "host": [
+            "kswgdborvuyyinzdlqkm",
+            "functions",
+            "supabase",
+            "co"
+          ],
+          "path": [
+            "check-usage-limits"
+          ]
+        }
+      },
+      "response": []
+    }
+  ],
+  "variable": [
+    {
+      "key": "SERVICE_ROLE_KEY",
+      "value": "pune_cheia_ta_de_service_role_aici"
+    }
+  ]
+}
