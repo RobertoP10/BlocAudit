@@ -1,11 +1,12 @@
+import CompanyAdminDashboard from "./components/CompanyAdminDashboard";
+
 function App() {
+  const testCompanyId = "3ea4379e-4f15-41a0-9c5e-29ce1f807210"; // pune aici un UUID real
   return (
-    <div className="flex items-center justify-center h-screen bg-gray-100">
-      <h1 className="text-4xl font-bold text-blue-600">
-        BlocAudit merge cu Tailwind 🎉
-      </h1>
+    <div className="min-h-screen bg-gray-50">
+      <CompanyAdminDashboard companyId={testCompanyId} />
     </div>
-  )
+  );
 }
 
-export default App
+export default App;
