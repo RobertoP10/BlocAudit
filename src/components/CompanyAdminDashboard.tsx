@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
+import { Card, CardHeader, CardContent } from "@/components/ui/Card";
 
 // Importăm componentele pentru fiecare tab (le implementăm pe rând)
 import Overview from "./tabs/Overview";

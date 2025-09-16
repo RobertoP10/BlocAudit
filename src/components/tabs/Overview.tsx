@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { supabase } from "@/lib/supabaseClient";
-import { Card, CardHeader, CardContent } from "@/components/ui/card";
-import { Progress } from "@/components/ui/progress";
+import { Card, CardHeader, CardContent } from "@/components/ui/Card";
+import { Progress } from "@/components/ui/Progress";
 import {
   BarChart,
   Bar,
