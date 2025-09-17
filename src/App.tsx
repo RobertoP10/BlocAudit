@@ -1,11 +1,21 @@
-import { CompanyAdminDashboard } from "./components";
+import { BrowserRouter as Router, Routes, Route } from "react-router-dom";
+import SuperAdminDashboard from "./pages/superadmin/SuperAdminDashboard";
+import AdminDashboard from "./pages/admin/AdminDashboard";
+import TechnicalDashboard from "./pages/technical/TechnicalDashboard";
+import ServiceDashboard from "./pages/service/ServiceDashboard";
+import ClientDashboard from "./pages/client/ClientDashboard";
 
 function App() {
-  const testCompanyId = "3ea4379e-4f15-41a0-9c5e-29ce1f807210"; // pune aici un UUID real
   return (
-    <div className="min-h-screen bg-gray-50">
-      <CompanyAdminDashboard companyId={testCompanyId} />
-    </div>
+    <Router>
+      <Routes>
+        <Route path="/superadmin" element={<SuperAdminDashboard />} />
+        <Route path="/admin" element={<AdminDashboard />} />
+        <Route path="/technical" element={<TechnicalDashboard />} />
+        <Route path="/service" element={<ServiceDashboard />} />
+        <Route path="/client" element={<ClientDashboard />} />
+      </Routes>
+    </Router>
   );
 }
 
