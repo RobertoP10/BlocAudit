@@ -11,11 +11,11 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-[#3B82F6] via-[#6366F1] to-[#9333EA]">
       <div className="w-full max-w-md bg-white shadow-2xl rounded-2xl p-8">
         {/* Logo / Titlu */}
         <h1 className="text-3xl font-bold text-center text-indigo-600 mb-2">
-          BlocAudit
+          BlocAudit 🚀
         </h1>
         <p className="text-center text-gray-500 mb-6">
           Conectează-te la contul tău
@@ -58,7 +58,10 @@ export default function Login() {
         {/* Link register */}
         <div className="mt-6 text-center text-sm text-gray-500">
           Nu ai cont?{" "}
-          <a href="/register" className="text-indigo-600 font-medium hover:underline">
+          <a
+            href="/register"
+            className="text-indigo-600 font-medium hover:underline"
+          >
             Creează unul
           </a>
         </div>

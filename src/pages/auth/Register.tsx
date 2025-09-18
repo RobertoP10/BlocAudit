@@ -22,11 +22,11 @@ export default function Register() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-green-400 via-emerald-500 to-teal-600">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-[#4ADE80] via-[#10B981] to-[#0D9488]">
       <div className="w-full max-w-lg bg-white shadow-2xl rounded-2xl p-8">
         {/* Titlu */}
         <h1 className="text-3xl font-bold text-center text-emerald-600 mb-2">
-          Creează cont BlocAudit
+          Creează cont BlocAudit 🌱
         </h1>
         <p className="text-center text-gray-500 mb-6">
           Completează toate câmpurile pentru a-ți crea un cont
@@ -124,7 +124,10 @@ export default function Register() {
         {/* Link către login */}
         <div className="mt-6 text-center text-sm text-gray-500">
           Ai deja cont?{" "}
-          <a href="/login" className="text-emerald-600 font-medium hover:underline">
+          <a
+            href="/login"
+            className="text-emerald-600 font-medium hover:underline"
+          >
             Conectează-te
           </a>
         </div>
