@@ -3,13 +3,14 @@ import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const supabaseAdmin = createClient(
-  Deno.env.get("SUPABASE_URL"),
-  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")
+  Deno.env.get("SUPABASE_URL")!,
+  Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
 
 serve(async (req) => {
   try {
-    let payload = {};
+    // 🔹 Citire body JSON cu fallback
+    let payload: any = {};
     try {
       payload = await req.json();
     } catch {
@@ -18,24 +19,24 @@ serve(async (req) => {
           success: false,
           error: "Invalid or empty JSON body",
         }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
       );
     }
 
-    const { email, password, full_name, company_name } = payload as {
-      email: string;
-      password: string;
-      full_name: string;
-      company_name: string;
-    };
-
+    const { email, password, full_name, company_name } = payload;
     if (!email || !password || !full_name || !company_name) {
       return new Response(
         JSON.stringify({
           success: false,
           error: "Missing required fields",
         }),
-        { status: 400, headers: { "Content-Type": "application/json" } }
+        {
+          status: 400,
+          headers: { "Content-Type": "application/json" },
+        }
       );
     }
 
@@ -47,6 +48,8 @@ serve(async (req) => {
         email_confirm: false,
         user_metadata: { full_name },
       });
+
+    console.log("Auth result:", { authData, authError });
 
     if (authError || !authData?.user) {
       throw new Error(authError?.message || "Auth createUser failed");
@@ -63,11 +66,13 @@ serve(async (req) => {
         request_limit: 100,
         user_limit: 100,
       })
-      .select("id") // 👈 important
+      .select("id, name, subscription_plan, request_limit, user_limit")
       .single();
 
+    console.log("Company result:", { company, companyError });
+
     if (companyError || !company) {
-      throw new Error(companyError?.message || "Company insert failed");
+      throw new Error(companyError.message || "Company insert failed");
     }
 
     // 3. Creează user în app_users
@@ -77,6 +82,8 @@ serve(async (req) => {
       role: "admin",
       company_id: company.id,
     });
+
+    console.log("App_users insert result:", { userError });
 
     if (userError) {
       throw new Error(userError.message);
@@ -90,7 +97,10 @@ serve(async (req) => {
         company_id: company.id,
         message: "Company and admin user created successfully",
       }),
-      { status: 200, headers: { "Content-Type": "application/json" } }
+      {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      }
     );
   } catch (err: any) {
     console.error("create-company-admin error:", err);
@@ -99,7 +109,10 @@ serve(async (req) => {
         success: false,
         error: err.message || String(err),
       }),
-      { status: 500, headers: { "Content-Type": "application/json" } }
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
     );
   }
 });
