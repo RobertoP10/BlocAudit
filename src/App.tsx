@@ -12,7 +12,6 @@ function Layout() {
   const location = useLocation();
   const authRoutes = ["/login", "/register"];
 
-  // dacă suntem pe login sau register => fără sidebar
   const hideSidebar = authRoutes.includes(location.pathname);
 
   return (
@@ -20,14 +19,13 @@ function Layout() {
       {!hideSidebar && <Sidebar />}
       <main className="flex-1 bg-gray-50 p-6">
         <Routes>
-          {/* Dashboard routes */}
           <Route path="/superadmin" element={<SuperAdminDashboard />} />
           <Route path="/admin" element={<AdminDashboard />} />
           <Route path="/technical" element={<TechnicalDashboard />} />
           <Route path="/service" element={<ServiceDashboard />} />
           <Route path="/client" element={<ClientDashboard />} />
 
-          {/* Auth routes */}
+          {/* Auth */}
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
         </Routes>
