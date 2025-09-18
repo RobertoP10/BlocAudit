@@ -7,6 +7,14 @@ import ServiceDashboard from "./pages/service/ServiceDashboard";
 import ClientDashboard from "./pages/client/ClientDashboard";
 import Login from "./pages/auth/Login";
 import Register from "./pages/auth/Register";
+import { Navigate } from "react-router-dom";
+
+<Routes>
+  <Route path="/" element={<Navigate to="/login" replace />} />
+  <Route path="/login" element={<Login />} />
+  <Route path="/register" element={<Register />} />
+  {/* restul dashboardurilor */}
+</Routes>
 
 function Layout() {
   const location = useLocation();
