@@ -1,4 +1,10 @@
-import { BrowserRouter as Router, Routes, Route, useLocation } from "react-router-dom";
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  useLocation,
+  Navigate,
+} from "react-router-dom";
 import Sidebar from "./components/Sidebar";
 
 // Dashboards
@@ -21,13 +27,35 @@ import GDPR from "./pages/legal/GDPR";
 import Terms from "./pages/legal/Terms";
 import Contact from "./pages/legal/Contact";
 
+// Context
+import { AuthProvider, useAuth } from "./context/AuthContext";
+
+// 🔒 Componentă pentru protecția rutelor
+function ProtectedRoute({
+  children,
+  allowedRoles,
+}: {
+  children: JSX.Element;
+  allowedRoles: string[];
+}) {
+  const { user, profile, loading } = useAuth();
+
+  if (loading) return <div className="p-8 text-center">Se încarcă...</div>;
+  if (!user) return <Navigate to="/login" replace />;
+  if (!profile || !allowedRoles.includes(profile.role)) {
+    return <Navigate to="/login" replace />;
+  }
+
+  return children;
+}
+
 function Layout() {
   const location = useLocation();
 
   // rute unde nu vrem Sidebar
   const noSidebarRoutes = [
-    "/",           // Funnel
-    "/landing",    // LandingPage
+    "/", // Funnel
+    "/landing",
     "/login",
     "/register",
     "/gdpr",
@@ -48,12 +76,47 @@ function Layout() {
           {/* LandingPage */}
           <Route path="/landing" element={<LandingPage />} />
 
-          {/* Dashboards */}
-          <Route path="/superadmin" element={<SuperAdminDashboard />} />
-          <Route path="/admin" element={<AdminDashboard />} />
-          <Route path="/technical" element={<TechnicalDashboard />} />
-          <Route path="/service" element={<ServiceDashboard />} />
-          <Route path="/client" element={<ClientDashboard />} />
+          {/* Dashboards protejate */}
+          <Route
+            path="/superadmin"
+            element={
+              <ProtectedRoute allowedRoles={["superadmin"]}>
+                <SuperAdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/admin"
+            element={
+              <ProtectedRoute allowedRoles={["admin"]}>
+                <AdminDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/technical"
+            element={
+              <ProtectedRoute allowedRoles={["technical"]}>
+                <TechnicalDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/service"
+            element={
+              <ProtectedRoute allowedRoles={["service"]}>
+                <ServiceDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/client"
+            element={
+              <ProtectedRoute allowedRoles={["client"]}>
+                <ClientDashboard />
+              </ProtectedRoute>
+            }
+          />
 
           {/* Auth */}
           <Route path="/login" element={<Login />} />
@@ -72,7 +135,9 @@ function Layout() {
 function App() {
   return (
     <Router>
-      <Layout />
+      <AuthProvider>
+        <Layout />
+      </AuthProvider>
     </Router>
   );
 }
