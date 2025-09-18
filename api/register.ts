@@ -1,14 +1,17 @@
-export default async function handler(req: Request): Promise<Response> {
+// api/register.ts
+import type { VercelRequest, VercelResponse } from "@vercel/node";
+
+export default async function handler(req: VercelRequest, res: VercelResponse) {
   if (req.method !== "POST") {
-    return new Response(JSON.stringify({ error: "Method not allowed" }), {
-      status: 405,
-      headers: { "Content-Type": "application/json" },
-    });
+    return res.status(405).json({ success: false, error: "Method not allowed" });
   }
 
   try {
-    const { email, password, full_name, company_name, address, phone } =
-      await req.json();
+    const { email, password, full_name, company_name, address, phone } = req.body;
+
+    if (!email || !password || !full_name || !company_name) {
+      return res.status(400).json({ success: false, error: "Missing required fields" });
+    }
 
     const supabaseRes = await fetch(
       "https://zjguegunedvuogqoiwzg.supabase.co/functions/v1/create-company-admin",
@@ -29,20 +32,23 @@ export default async function handler(req: Request): Promise<Response> {
       }
     );
 
-    const data = await supabaseRes.json();
+    const rawText = await supabaseRes.text();
+    console.log("Supabase raw response:", rawText);
 
-    return new Response(JSON.stringify(data), {
-      status: supabaseRes.status,
-      headers: { "Content-Type": "application/json" },
-    });
+    let data: any;
+    try {
+      data = JSON.parse(rawText);
+    } catch {
+      // Dacă nu e JSON valid, îl împachetăm într-un răspuns JSON
+      return res.status(500).json({
+        success: false,
+        error: rawText || "Unexpected non-JSON response from Supabase",
+      });
+    }
+
+    return res.status(supabaseRes.status).json(data);
   } catch (err: any) {
     console.error("Register API error:", err);
-    return new Response(
-      JSON.stringify({ success: false, error: err.message }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
-    );
+    return res.status(500).json({ success: false, error: err.message || "Internal error" });
   }
 }
