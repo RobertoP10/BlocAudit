@@ -11,43 +11,44 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center 
-      bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-600 
-      bg-[url('/blocuri.png')] bg-cover bg-center bg-blend-overlay 
-      animate-fade-in-down">
-      
-      <div className="w-full max-w-md bg-white/80 backdrop-blur-lg 
-        shadow-2xl rounded-2xl p-8 border border-indigo-100 animate-fade-in-up">
-        
-        {/* Titlu */}
-        <h1 className="text-4xl font-extrabold text-center text-indigo-600 mb-4 tracking-tight animate-pulse-scale">
-          BlocAudit 🚀
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-[#3B82F6] via-[#6366F1] to-[#9333EA] relative">
+      {/* 👇 Buton înapoi la homepage */}
+      <a
+        href="/"
+        className="absolute top-4 left-4 text-white bg-indigo-600 px-3 py-1 rounded-lg text-sm hover:bg-indigo-700 transition"
+      >
+        ← Înapoi la Homepage
+      </a>
+
+      {/* Card login */}
+      <div className="w-full max-w-md bg-white/90 backdrop-blur-lg shadow-2xl rounded-2xl p-8 border border-indigo-100 animate-fade-in-down">
+        <h1 className="text-3xl font-bold text-center text-indigo-600 mb-2">
+          BlocAudit
         </h1>
-        <p className="text-center text-gray-600 mb-6">
+        <p className="text-center text-gray-500 mb-6">
           Conectează-te la contul tău
         </p>
 
-        {/* Formular */}
-        <form onSubmit={handleLogin} className="space-y-5">
-          <div className="relative animate-fade-in-up">
+        <form onSubmit={handleLogin} className="space-y-4">
+          <div className="relative">
             <Mail className="absolute left-3 top-3 text-gray-400" size={18} />
             <input
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full pl-10 pr-3 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:shadow-md outline-none transition"
+              className="w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:shadow-md outline-none transition"
               placeholder="you@example.com"
               required
             />
           </div>
 
-          <div className="relative animate-fade-in-up delay-150">
+          <div className="relative">
             <Lock className="absolute left-3 top-3 text-gray-400" size={18} />
             <input
               type="password"
               value={password}
               onChange={(e) => setPassword(e.target.value)}
-              className="w-full pl-10 pr-3 py-3 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:shadow-md outline-none transition"
+              className="w-full pl-10 pr-3 py-2 border rounded-lg focus:ring-2 focus:ring-indigo-500 focus:shadow-md outline-none transition"
               placeholder="••••••••"
               required
             />
@@ -55,7 +56,7 @@ export default function Login() {
 
           <button
             type="submit"
-            className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 bg-[length:200%_200%] animate-gradient-x text-white py-3 rounded-lg font-semibold shadow-md hover:scale-105 hover:shadow-xl transition"
+            className="w-full bg-gradient-to-r from-indigo-500 to-purple-600 text-white py-2 rounded-lg font-semibold shadow-md hover:scale-105 hover:shadow-xl transition"
           >
             Conectează-te
           </button>
@@ -68,10 +69,13 @@ export default function Login() {
           <div className="flex-1 h-px bg-gray-300"></div>
         </div>
 
-        {/* Link către register */}
-        <div className="text-center text-sm text-gray-600">
+        {/* Link register */}
+        <div className="text-center text-sm text-gray-500">
           Nu ai cont?{" "}
-          <a href="/register" className="text-indigo-600 font-medium hover:underline">
+          <a
+            href="/register"
+            className="text-indigo-600 font-medium hover:underline"
+          >
             Creează unul
           </a>
         </div>
