@@ -1,7 +1,7 @@
-// supabase/functions/create-company-admin/index.ts
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
+// client cu cheia service_role pentru funcții edge
 const supabaseAdmin = createClient(
   Deno.env.get("SUPABASE_URL")!,
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
@@ -9,7 +9,7 @@ const supabaseAdmin = createClient(
 
 serve(async (req) => {
   try {
-    // 🔹 Citire body JSON cu fallback
+    // citire body JSON
     let payload: any = {};
     try {
       payload = await req.json();
@@ -19,24 +19,19 @@ serve(async (req) => {
           success: false,
           error: "Invalid or empty JSON body",
         }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
+        { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
 
     const { email, password, full_name, company_name } = payload;
+
     if (!email || !password || !full_name || !company_name) {
       return new Response(
         JSON.stringify({
           success: false,
           error: "Missing required fields",
         }),
-        {
-          status: 400,
-          headers: { "Content-Type": "application/json" },
-        }
+        { status: 400, headers: { "Content-Type": "application/json" } }
       );
     }
 
@@ -45,19 +40,16 @@ serve(async (req) => {
       await supabaseAdmin.auth.admin.createUser({
         email,
         password,
-        email_confirm: false,
+        email_confirm: true, // trimite email de confirmare
         user_metadata: { full_name },
       });
-
-    console.log("Auth result:", { authData, authError });
 
     if (authError || !authData?.user) {
       throw new Error(authError?.message || "Auth createUser failed");
     }
-
     const user = authData.user;
 
-    // 2. Creează compania
+    // 2. Creează compania (select explicit pentru a evita ambiguitatea)
     const { data: company, error: companyError } = await supabaseAdmin
       .from("companies")
       .insert({
@@ -69,10 +61,8 @@ serve(async (req) => {
       .select("id, name, subscription_plan, request_limit, user_limit")
       .single();
 
-    console.log("Company result:", { company, companyError });
-
     if (companyError || !company) {
-      throw new Error(companyError.message || "Company insert failed");
+      throw new Error(companyError?.message || "Company insert failed");
     }
 
     // 3. Creează user în app_users
@@ -80,10 +70,8 @@ serve(async (req) => {
       id: user.id,
       full_name,
       role: "admin",
-      company_id: company.id,
+      company_id: company.id, // referință clară
     });
-
-    console.log("App_users insert result:", { userError });
 
     if (userError) {
       throw new Error(userError.message);
@@ -97,10 +85,7 @@ serve(async (req) => {
         company_id: company.id,
         message: "Company and admin user created successfully",
       }),
-      {
-        status: 200,
-        headers: { "Content-Type": "application/json" },
-      }
+      { status: 200, headers: { "Content-Type": "application/json" } }
     );
   } catch (err: any) {
     console.error("create-company-admin error:", err);
@@ -109,10 +94,7 @@ serve(async (req) => {
         success: false,
         error: err.message || String(err),
       }),
-      {
-        status: 500,
-        headers: { "Content-Type": "application/json" },
-      }
+      { status: 500, headers: { "Content-Type": "application/json" } }
     );
   }
 });
