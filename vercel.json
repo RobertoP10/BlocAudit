@@ -1,14 +1,52 @@
-{
-    "rewrites": [
-      { "source": "/(.*)", "destination": "/" }
-    ],
-    "headers": [
-      {
-        "source": "/(.*)",
-        "headers": [
-          { "key": "Cache-Control", "value": "no-store" }
-        ]
-      }
-    ]
-  }
-  
+/** @type {import('tailwindcss').Config} */
+export default {
+  content: ["./index.html", "./src/**/*.{js,ts,jsx,tsx}"],
+  theme: {
+    extend: {
+      colors: {
+        blue: {
+          500: "#3B82F6",
+        },
+        indigo: {
+          500: "#6366F1",
+        },
+        purple: {
+          600: "#9333EA",
+        },
+        green: {
+          400: "#4ADE80",
+        },
+        emerald: {
+          500: "#10B981",
+        },
+        teal: {
+          600: "#0D9488",
+        },
+      },
+      keyframes: {
+        "fade-in-down": {
+          "0%": { opacity: "0", transform: "translateY(-20px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "fade-in-up": {
+          "0%": { opacity: "0", transform: "translateY(20px)" },
+          "100%": { opacity: "1", transform: "translateY(0)" },
+        },
+        "pulse-scale": {
+          "0%, 100%": { transform: "scale(1)" },
+          "50%": { transform: "scale(1.05)" },
+        },
+      },
+      animation: {
+        "fade-in-down": "fade-in-down 0.5s ease-out",
+        "fade-in-up": "fade-in-up 0.5s ease-out",
+        "pulse-scale": "pulse-scale 1.5s infinite",
+      },
+    },
+  },
+  plugins: [
+    require("@tailwindcss/forms"), // formulare frumoase
+    require("@tailwindcss/typography"),
+    require("@tailwindcss/aspect-ratio"),
+  ],
+};
