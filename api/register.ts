@@ -1,21 +1,22 @@
-import type { VercelRequest, VercelResponse } from "@vercel/node";
-
-export default async function handler(req: VercelRequest, res: VercelResponse) {
+export default async function handler(req: Request): Promise<Response> {
   if (req.method !== "POST") {
-    return res.status(405).json({ error: "Method not allowed" });
+    return new Response(JSON.stringify({ error: "Method not allowed" }), {
+      status: 405,
+      headers: { "Content-Type": "application/json" },
+    });
   }
 
   try {
-    const { email, password, full_name, company_name, address, phone } = req.body;
+    const { email, password, full_name, company_name, address, phone } =
+      await req.json();
 
-    // 🔐 apelăm edge function-ul din Supabase
     const supabaseRes = await fetch(
       "https://zjguegunedvuogqoiwzg.supabase.co/functions/v1/create-company-admin",
       {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`, // doar pe server!
+          Authorization: `Bearer ${process.env.SUPABASE_SERVICE_ROLE_KEY}`,
         },
         body: JSON.stringify({
           email,
@@ -29,9 +30,19 @@ export default async function handler(req: VercelRequest, res: VercelResponse) {
     );
 
     const data = await supabaseRes.json();
-    return res.status(supabaseRes.status).json(data);
+
+    return new Response(JSON.stringify(data), {
+      status: supabaseRes.status,
+      headers: { "Content-Type": "application/json" },
+    });
   } catch (err: any) {
     console.error("Register API error:", err);
-    return res.status(500).json({ success: false, error: err.message });
+    return new Response(
+      JSON.stringify({ success: false, error: err.message }),
+      {
+        status: 500,
+        headers: { "Content-Type": "application/json" },
+      }
+    );
   }
 }
