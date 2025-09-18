@@ -5,6 +5,7 @@ import {
   useLocation,
   Navigate,
 } from "react-router-dom";
+import { ReactNode } from "react";
 import Sidebar from "./components/Sidebar";
 
 // Dashboards
@@ -35,7 +36,7 @@ function ProtectedRoute({
   children,
   allowedRoles,
 }: {
-  children: JSX.Element;
+  children: ReactNode;
   allowedRoles: string[];
 }) {
   const { user, profile, loading } = useAuth();
@@ -46,7 +47,7 @@ function ProtectedRoute({
     return <Navigate to="/login" replace />;
   }
 
-  return children;
+  return <>{children}</>;
 }
 
 function Layout() {
