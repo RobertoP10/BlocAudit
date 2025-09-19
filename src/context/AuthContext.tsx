@@ -1,6 +1,7 @@
 import { createContext, useContext, useEffect, useState, ReactNode } from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabaseClient";
+import { useNavigate } from "react-router-dom"; // 👈 adăugat
 
 type Profile = {
   id: string;
@@ -28,9 +29,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
+  const navigate = useNavigate(); // 👈 adăugat
 
   useEffect(() => {
-    // 1️⃣ verifică sesiunea existentă
     const getInitialSession = async () => {
       const { data } = await supabase.auth.getSession();
       const session: Session | null = data.session;
@@ -44,7 +45,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     getInitialSession();
 
-    // 2️⃣ subscribe la evenimente de login/logout
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (_event, session) => {
         setUser(session?.user ?? null);
@@ -62,7 +62,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, []);
 
-  // 📥 ia profilul din app_users
   const loadProfile = async (userId: string) => {
     const { data, error } = await supabase
       .from("app_users")
@@ -75,11 +74,11 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     }
   };
 
-  // 🚪 logout
   const signOut = async () => {
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
+    navigate("/login", { replace: true }); // 👈 redirecționare după logout
   };
 
   return (
@@ -89,5 +88,4 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   );
 }
 
-// Hook custom pentru acces rapid
 export const useAuth = () => useContext(AuthContext);
