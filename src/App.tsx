@@ -2,7 +2,6 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
-  useLocation,
   Navigate,
 } from "react-router-dom";
 import { ReactNode } from "react";
@@ -50,24 +49,8 @@ function ProtectedRoute({
 }
 
 function Layout() {
-  const location = useLocation();
-
-  // rute speciale (nu mai folosim Sidebar deloc, dar păstrez structura pentru extensii viitoare)
-  const noSidebarRoutes = [
-    "/", // Funnel
-    "/landing",
-    "/login",
-    "/register",
-    "/gdpr",
-    "/terms",
-    "/contact",
-  ];
-
-  const hideSidebar = noSidebarRoutes.includes(location.pathname);
-
   return (
     <div className="flex">
-      {/* Sidebar eliminat complet */}
       <main className="flex-1 bg-gray-50 min-h-screen">
         <Routes>
           {/* Prima pagină → FunnelPage */}
