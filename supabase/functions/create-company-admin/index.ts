@@ -1,6 +1,7 @@
 // supabase/functions/create-company-admin/index.ts
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { sendNotification } from "../send-notification/_shared.ts"; // adaptat la path-ul tău
 
 const supabaseAdmin = createClient(
   Deno.env.get("SUPABASE_URL")!,
@@ -19,11 +20,11 @@ serve(async (req) => {
       });
     }
 
-    // 1. Creează Admin în Auth (va primi email de verificare prin SMTP configurat)
+    // 1. Creează Admin în Auth (NECONFIRMAT)
     const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
-      email_confirm: false, // ⚡ trimite email de verificare automat
+      email_confirm: false, // îl lăsăm neconfirmat
       user_metadata: { full_name },
     });
 
@@ -59,6 +60,29 @@ serve(async (req) => {
     if (userError) {
       throw new Error(userError.message);
     }
+
+    // 4. Generează link de confirmare email
+    const { data: linkData, error: linkError } = await supabaseAdmin.auth.admin.generateLink({
+      type: "signup",
+      email,
+    });
+
+    if (linkError) {
+      throw new Error(linkError.message);
+    }
+
+    // 5. Trimite email cu linkul de verificare prin SMTP-ul tău
+    await sendNotification({
+      to: email,
+      subject: "Verifică-ți emailul pentru BlocAudit",
+      html: `
+        <p>Bun venit în <b>BlocAudit</b>!</p>
+        <p>Contul tău de Admin pentru compania <b>${company_name}</b> a fost creat.</p>
+        <p>Te rugăm să îți confirmi adresa de email apăsând pe linkul de mai jos:</p>
+        <p><a href="${linkData.properties.action_link}">Confirmă email</a></p>
+        <p>Dacă nu ai solicitat acest cont, ignoră acest mesaj.</p>
+      `,
+    });
 
     // ✅ Returnăm succes
     return new Response(
