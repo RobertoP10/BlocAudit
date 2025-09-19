@@ -11,7 +11,7 @@ export default function Login() {
   const navigate = useNavigate();
   const { profile, user } = useAuth();
 
-  // 🔄 Dacă ești deja logat, te redirecționează automat
+  // 🔄 După login, redirect în funcție de rol
   useEffect(() => {
     if (profile?.role) {
       switch (profile.role) {

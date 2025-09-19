@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { User, Mail, Home, Phone, Lock, Building2 } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 export default function Register() {
   const [firstName, setFirstName] = useState("");
@@ -13,6 +14,7 @@ export default function Register() {
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
   const [error, setError] = useState("");
+  const navigate = useNavigate();
 
   const handleRegister = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -40,9 +42,11 @@ export default function Register() {
         throw new Error(data.error || "Eroare la înregistrare");
       }
 
-      setMessage(
-        "Contul a fost creat! Verifică-ți emailul pentru a confirma adresa înainte să te conectezi."
-      );
+      setMessage("Contul de Admin a fost creat! Verifică-ți emailul pentru confirmare.");
+      // Redirect la login după câteva secunde
+      setTimeout(() => {
+        navigate("/login");
+      }, 4000);
     } catch (err: any) {
       console.error("Register error:", err.message);
       setError(err.message);
@@ -53,7 +57,6 @@ export default function Register() {
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-green-400 via-emerald-500 to-teal-600 relative">
-      {/* Buton înapoi */}
       <a
         href="/"
         className="absolute top-4 left-4 text-white bg-emerald-600 px-3 py-1 rounded-lg text-sm hover:bg-emerald-700 transition"
@@ -61,16 +64,16 @@ export default function Register() {
         ← Înapoi la Homepage
       </a>
 
-      {/* Card Register */}
       <div className="w-full max-w-lg bg-white shadow-2xl rounded-2xl p-8 animate-fade-in-down">
         <h1 className="text-3xl font-bold text-center text-emerald-600 mb-2">
           Creează cont BlocAudit
         </h1>
         <p className="text-center text-gray-500 mb-6">
-          Completează toate câmpurile pentru a-ți crea un cont de Admin
+          Completează toate câmpurile pentru a-ți crea un cont de <b>Admin</b>
         </p>
 
         <form onSubmit={handleRegister} className="space-y-4">
+          {/* Prenume */}
           <div className="relative">
             <User className="absolute left-3 top-3 text-gray-400" size={18} />
             <input
@@ -83,6 +86,7 @@ export default function Register() {
             />
           </div>
 
+          {/* Nume */}
           <div className="relative">
             <User className="absolute left-3 top-3 text-gray-400" size={18} />
             <input
@@ -95,6 +99,7 @@ export default function Register() {
             />
           </div>
 
+          {/* Companie */}
           <div className="relative">
             <Building2 className="absolute left-3 top-3 text-gray-400" size={18} />
             <input
@@ -107,6 +112,7 @@ export default function Register() {
             />
           </div>
 
+          {/* Email */}
           <div className="relative">
             <Mail className="absolute left-3 top-3 text-gray-400" size={18} />
             <input
@@ -119,6 +125,7 @@ export default function Register() {
             />
           </div>
 
+          {/* Adresă */}
           <div className="relative">
             <Home className="absolute left-3 top-3 text-gray-400" size={18} />
             <input
@@ -131,6 +138,7 @@ export default function Register() {
             />
           </div>
 
+          {/* Telefon */}
           <div className="relative">
             <Phone className="absolute left-3 top-3 text-gray-400" size={18} />
             <input
@@ -143,6 +151,7 @@ export default function Register() {
             />
           </div>
 
+          {/* Parolă */}
           <div className="relative">
             <Lock className="absolute left-3 top-3 text-gray-400" size={18} />
             <input
@@ -155,16 +164,8 @@ export default function Register() {
             />
           </div>
 
-          {error && (
-            <p className="text-red-600 text-sm font-medium text-center">
-              {error}
-            </p>
-          )}
-          {message && (
-            <p className="text-green-600 text-sm font-medium text-center">
-              {message}
-            </p>
-          )}
+          {error && <p className="text-red-600 text-sm font-medium text-center">{error}</p>}
+          {message && <p className="text-green-600 text-sm font-medium text-center">{message}</p>}
 
           <button
             type="submit"
