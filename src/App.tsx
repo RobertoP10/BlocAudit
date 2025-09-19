@@ -6,7 +6,6 @@ import {
   Navigate,
 } from "react-router-dom";
 import { ReactNode } from "react";
-import Sidebar from "./components/Sidebar";
 
 // Dashboards
 import SuperAdminDashboard from "./pages/superadmin/SuperAdminDashboard";
@@ -53,7 +52,7 @@ function ProtectedRoute({
 function Layout() {
   const location = useLocation();
 
-  // rute unde nu vrem Sidebar
+  // rute speciale (nu mai folosim Sidebar deloc, dar păstrez structura pentru extensii viitoare)
   const noSidebarRoutes = [
     "/", // Funnel
     "/landing",
@@ -68,7 +67,7 @@ function Layout() {
 
   return (
     <div className="flex">
-      {!hideSidebar && <Sidebar />}
+      {/* Sidebar eliminat complet */}
       <main className="flex-1 bg-gray-50 min-h-screen">
         <Routes>
           {/* Prima pagină → FunnelPage */}
