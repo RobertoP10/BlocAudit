@@ -39,9 +39,21 @@ function ProtectedRoute({
 }) {
   const { user, profile, loading } = useAuth();
 
-  if (loading) return <div className="p-8 text-center">Se încarcă...</div>;
-  if (!user) return <Navigate to="/login" replace />;
-  if (!profile || !allowedRoles.includes(profile.role)) {
+  if (loading) {
+    return <div className="p-8 text-center">Se încarcă...</div>;
+  }
+
+  if (!user) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Dacă profilul nu există după ce loading s-a terminat
+  if (!profile) {
+    return <Navigate to="/login" replace />;
+  }
+
+  // Dacă profilul există dar rolul nu e permis
+  if (!allowedRoles.includes(profile.role)) {
     return <Navigate to="/login" replace />;
   }
 
