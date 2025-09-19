@@ -41,9 +41,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const getInitialSession = async () => {
       const { data, error } = await supabase.auth.getSession();
 
-      // dacă nu există sesiune validă → curățăm
       if (error || !data.session) {
+        // dacă nu există sesiune validă → logout curat
         await supabase.auth.signOut();
+        localStorage.removeItem("supabase.auth.token");
         setUser(null);
         setProfile(null);
         setLoading(false);
@@ -58,13 +59,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     getInitialSession();
 
-    // ascultăm evenimentele de auth
+    // ascultă evenimentele de auth
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         if (event === "SIGNED_OUT" || !session) {
           setUser(null);
           setProfile(null);
           setLoading(false);
+          localStorage.removeItem("supabase.auth.token");
           navigate("/login", { replace: true });
           return;
         }
@@ -102,9 +104,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   const signOut = async () => {
     await supabase.auth.signOut();
+
+    // curățăm și manual localStorage
+    localStorage.removeItem("supabase.auth.token");
+
     setUser(null);
     setProfile(null);
-    navigate("/login", { replace: true }); // 👈 redirect după logout
+
+    navigate("/login", { replace: true });
   };
 
   return (
