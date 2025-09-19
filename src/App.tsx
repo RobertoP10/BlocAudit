@@ -2,6 +2,7 @@ import {
   BrowserRouter as Router,
   Routes,
   Route,
+  useLocation,
   Navigate,
 } from "react-router-dom";
 import { ReactNode } from "react";
@@ -29,6 +30,9 @@ import Contact from "./pages/legal/Contact";
 // Context
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
+// Components
+import Sidebar from "./components/Sidebar"; // aici era componenta Sidebar
+
 // 🔒 Componentă pentru protecția rutelor
 function ProtectedRoute({
   children,
@@ -41,13 +45,7 @@ function ProtectedRoute({
 
   if (loading) return <div className="p-8 text-center">Se încarcă...</div>;
   if (!user) return <Navigate to="/login" replace />;
-
-  // 🟢 FIX: așteptăm profilul, nu dăm redirect instant
-  if (!profile) {
-    return <div className="p-8 text-center">Se încarcă profilul...</div>;
-  }
-
-  if (!allowedRoles.includes(profile.role)) {
+  if (!profile || !allowedRoles.includes(profile.role)) {
     return <Navigate to="/login" replace />;
   }
 
@@ -55,8 +53,24 @@ function ProtectedRoute({
 }
 
 function Layout() {
+  const location = useLocation();
+
+  // rute unde nu vrem Sidebar
+  const noSidebarRoutes = [
+    "/", // Funnel
+    "/landing",
+    "/login",
+    "/register",
+    "/gdpr",
+    "/terms",
+    "/contact",
+  ];
+
+  const hideSidebar = noSidebarRoutes.includes(location.pathname);
+
   return (
     <div className="flex">
+      {!hideSidebar && <Sidebar />}
       <main className="flex-1 bg-gray-50 min-h-screen">
         <Routes>
           {/* Prima pagină → FunnelPage */}
