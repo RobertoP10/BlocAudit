@@ -38,7 +38,7 @@ serve(async (req) => {
       throw new Error(companyError?.message || "Company insert failed");
     }
 
-    // 2. Creează Admin în Auth (folosind signUp -> trimite automat email de verificare prin SMTP-ul configurat în Supabase)
+    // 2. Creează Admin în Auth (trimite email de verificare cu redirect explicit)
     const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
       email,
       password,
@@ -48,6 +48,7 @@ serve(async (req) => {
           role: "admin",
           company_id: company.id,
         },
+        emailRedirectTo: "https://bloc-audit-robertos-projects-67956ecc.vercel.app/login",
       },
     });
 
