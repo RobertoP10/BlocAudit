@@ -1,7 +1,13 @@
-import { createContext, useContext, useEffect, useState, ReactNode } from "react";
+import {
+  createContext,
+  useContext,
+  useEffect,
+  useState,
+  ReactNode,
+} from "react";
 import { Session, User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabaseClient";
-import { useNavigate } from "react-router-dom"; // 👈 adăugat
+import { useNavigate } from "react-router-dom";
 
 type Profile = {
   id: string;
@@ -29,30 +35,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate(); // 👈 adăugat
+  const navigate = useNavigate();
 
   useEffect(() => {
     const getInitialSession = async () => {
-      const { data } = await supabase.auth.getSession();
-      const session: Session | null = data.session;
+      const { data, error } = await supabase.auth.getSession();
 
-      setUser(session?.user ?? null);
-      if (session?.user) {
-        await loadProfile(session.user.id);
+      // dacă nu există sesiune validă → curățăm
+      if (error || !data.session) {
+        await supabase.auth.signOut();
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+        return;
       }
+
+      const session: Session = data.session;
+      setUser(session.user);
+      await loadProfile(session.user.id);
       setLoading(false);
     };
 
     getInitialSession();
 
+    // ascultăm evenimentele de auth
     const { data: listener } = supabase.auth.onAuthStateChange(
-      async (_event, session) => {
-        setUser(session?.user ?? null);
-        if (session?.user) {
-          await loadProfile(session.user.id);
-        } else {
+      async (event, session) => {
+        if (event === "SIGNED_OUT" || !session) {
+          setUser(null);
           setProfile(null);
+          setLoading(false);
+          navigate("/login", { replace: true });
+          return;
         }
+
+        if (event === "TOKEN_REFRESHED" && session) {
+          setUser(session.user);
+          await loadProfile(session.user.id);
+        }
+
+        if (event === "SIGNED_IN" && session) {
+          setUser(session.user);
+          await loadProfile(session.user.id);
+        }
+
         setLoading(false);
       }
     );
@@ -60,7 +86,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return () => {
       listener.subscription.unsubscribe();
     };
-  }, []);
+  }, [navigate]);
 
   const loadProfile = async (userId: string) => {
     const { data, error } = await supabase
@@ -78,7 +104,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     await supabase.auth.signOut();
     setUser(null);
     setProfile(null);
-    navigate("/login", { replace: true }); // 👈 redirecționare după logout
+    navigate("/login", { replace: true }); // 👈 redirect după logout
   };
 
   return (
