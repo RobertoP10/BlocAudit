@@ -1,66 +1,49 @@
 // supabase/functions/send-notification/index.ts
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
 import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+import { SMTPClient } from "https://deno.land/x/denomailer/mod.ts";
 
 const supabase = createClient(
   Deno.env.get("SUPABASE_URL")!,
   Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
 );
 
-export const handler = async (req: Request): Promise<Response> => {
+export const handler = async (req: Request) => {
   try {
     const body = await req.json();
+    const { to, subject, message, company_id } = body;
 
-    const to = body.to as string;
-    const subject = body.subject as string;
-    const message = body.message as string;
-    const company_id = body.company_id as string | undefined;
-
-    const SENDGRID_API_KEY = Deno.env.get("SENDGRID_API_KEY");
-    const SENDGRID_FROM_EMAIL = Deno.env.get("SENDGRID_FROM_EMAIL");
-
-    if (!SENDGRID_API_KEY || !SENDGRID_FROM_EMAIL) {
-      return new Response("Missing SendGrid config", { status: 500 });
+    if (!to || !subject || !message) {
+      return new Response(
+        JSON.stringify({ error: "Missing to/subject/message" }),
+        { status: 400, headers: { "Content-Type": "application/json" } }
+      );
     }
 
-    const res = await fetch("https://api.sendgrid.com/v3/mail/send", {
-      method: "POST",
-      headers: {
-        Authorization: `Bearer ${SENDGRID_API_KEY}`,
-        "Content-Type": "application/json",
+    // 🔹 Config SMTP (din .env)
+    const smtpClient = new SMTPClient({
+      connection: {
+        hostname: Deno.env.get("SMTP_HOST")!,      // ex: mail.hubdevnest.com
+        port: Number(Deno.env.get("SMTP_PORT")!), // ex: 465
+        tls: true,
+        auth: {
+          username: Deno.env.get("SMTP_USER")!,   // ex: contact@hubdevnest.com
+          password: Deno.env.get("SMTP_PASS")!,   // parola reală
+        },
       },
-      body: JSON.stringify({
-        personalizations: [{ to: [{ email: to }] }],
-        from: { email: SENDGRID_FROM_EMAIL },
-        subject,
-        content: [{ type: "text/plain", value: message }],
-      }),
     });
 
-    if (!res.ok) {
-      const errText = await res.text();
+    // 🔹 Trimitem emailul
+    await smtpClient.send({
+      from: `${Deno.env.get("SMTP_FROM_NAME") || "HubDevNest"} <${Deno.env.get("SMTP_FROM_EMAIL")}>`,
+      to,
+      subject,
+      content: message,
+    });
 
-      // 🔹 logăm eșecul
-      if (company_id) {
-        await supabase.from("subscription_logs").insert({
-          company_id,
-          event_type: "notification-error",
-          details: { to, subject, error: errText },
-        });
+    await smtpClient.close();
 
-        await supabase.from("notifications").insert({
-          company_id,
-          message: `Email failed to ${to}: ${subject}`,
-          type: "email",
-          severity: "error",
-          created_at: new Date().toISOString(),
-        });
-      }
-
-      throw new Error(`SendGrid error: ${errText}`);
-    }
-
-    // 🔹 logăm succesul
+    // 🔹 Logăm în Supabase
     if (company_id) {
       await supabase.from("subscription_logs").insert({
         company_id,
@@ -77,9 +60,16 @@ export const handler = async (req: Request): Promise<Response> => {
       });
     }
 
-    return new Response("Email sent successfully", { status: 200 });
-  } catch (err: any) {
-    return new Response(`Error: ${err.message}`, { status: 500 });
+    return new Response(
+      JSON.stringify({ success: true, message: "Email sent successfully" }),
+      { status: 200, headers: { "Content-Type": "application/json" } }
+    );
+  } catch (err) {
+    console.error("SMTP error:", err);
+    return new Response(
+      JSON.stringify({ success: false, error: err.message }),
+      { status: 500, headers: { "Content-Type": "application/json" } }
+    );
   }
 };
 
