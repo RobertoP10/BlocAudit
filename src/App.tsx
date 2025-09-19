@@ -39,20 +39,14 @@ function ProtectedRoute({
 }) {
   const { user, profile, loading } = useAuth();
 
-  if (loading) {
-    return <div className="p-8 text-center">Se încarcă...</div>;
-  }
+  if (loading) return <div className="p-8 text-center">Se încarcă...</div>;
+  if (!user) return <Navigate to="/login" replace />;
 
-  if (!user) {
-    return <Navigate to="/login" replace />;
-  }
-
-  // Dacă profilul nu există după ce loading s-a terminat
+  // 🟢 FIX: așteptăm profilul, nu dăm redirect instant
   if (!profile) {
-    return <Navigate to="/login" replace />;
+    return <div className="p-8 text-center">Se încarcă profilul...</div>;
   }
 
-  // Dacă profilul există dar rolul nu e permis
   if (!allowedRoles.includes(profile.role)) {
     return <Navigate to="/login" replace />;
   }
