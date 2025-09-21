@@ -31,6 +31,16 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
 });
 
+// 🧹 helper: șterge toate cheile Supabase token din localStorage
+const clearSupabaseTokens = () => {
+  Object.keys(localStorage).forEach((key) => {
+    if (key.startsWith("sb-") && key.includes("-auth-token")) {
+      localStorage.removeItem(key);
+      console.log("🧹 Removed token:", key);
+    }
+  });
+};
+
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
@@ -38,6 +48,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   useEffect(() => {
+    // 🔄 verifică sesiunea la start
     const getInitialSession = async () => {
       try {
         const { data, error } = await supabase.auth.getSession();
@@ -48,20 +59,14 @@ export function AuthProvider({ children }: { children: ReactNode }) {
           setUser(data.session.user);
           await loadProfile(data.session.user.id);
         } else {
-          // fallback dacă sesiunea nu e încărcată corect
-          const { data: userData } = await supabase.auth.getUser();
-          if (userData?.user) {
-            console.log("✅ getUser fallback:", userData.user.email);
-            setUser(userData.user);
-            await loadProfile(userData.user.id);
-          } else {
-            console.log("⚠️ No active session");
-            setUser(null);
-            setProfile(null);
-          }
+          console.log("⚠️ No active session, clearing tokens...");
+          clearSupabaseTokens();
+          setUser(null);
+          setProfile(null);
         }
       } catch (err) {
         console.error("❌ getInitialSession failed:", err);
+        clearSupabaseTokens();
         setUser(null);
         setProfile(null);
       } finally {
@@ -71,20 +76,28 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     getInitialSession();
 
-    // ascultă evenimentele de auth
+    // 📡 subscribe la evenimentele de auth
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log("🔄 Auth event:", event);
+        console.log("🔔 Auth event:", event);
 
         if (event === "SIGNED_OUT" || !session) {
+          clearSupabaseTokens();
           setUser(null);
           setProfile(null);
-          navigate("/login", { replace: true });
           setLoading(false);
+          navigate("/login", { replace: true });
           return;
         }
 
-        if (session?.user) {
+        if (event === "TOKEN_REFRESHED" && session) {
+          console.log("🔄 Token refreshed");
+          setUser(session.user);
+          await loadProfile(session.user.id);
+        }
+
+        if (event === "SIGNED_IN" && session) {
+          console.log("✅ Signed in:", session.user.email);
           setUser(session.user);
           await loadProfile(session.user.id);
         }
@@ -98,6 +111,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     };
   }, [navigate]);
 
+  // 📥 încarcă profilul din app_users
   const loadProfile = async (userId: string) => {
     const { data, error } = await supabase
       .from("app_users")
@@ -107,26 +121,22 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (!error && data) {
       setProfile(data as Profile);
-    } else {
-      console.warn("⚠️ Profile not found for user:", userId);
-      setProfile(null);
     }
   };
 
+  // 🚪 logout
   const signOut = async () => {
-    const { error } = await supabase.auth.signOut();
-    if (error) console.error("❌ Logout error:", error.message);
-
-    // curățăm orice sesiune Supabase salvată în localStorage
-    for (const key in localStorage) {
-      if (key.startsWith("sb-") && key.includes("-auth-token")) {
-        localStorage.removeItem(key);
-      }
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) console.error("❌ Logout error:", error.message);
+    } catch (err) {
+      console.error("❌ Logout exception:", err);
+    } finally {
+      clearSupabaseTokens();
+      setUser(null);
+      setProfile(null);
+      navigate("/login", { replace: true });
     }
-
-    setUser(null);
-    setProfile(null);
-    navigate("/login", { replace: true });
   };
 
   return (
