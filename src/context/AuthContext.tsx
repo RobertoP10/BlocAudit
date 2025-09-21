@@ -39,44 +39,49 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const getInitialSession = async () => {
-      const { data, error } = await supabase.auth.getSession();
+      try {
+        const { data, error } = await supabase.auth.getSession();
+        if (error) console.error("❌ getSession error:", error.message);
 
-      if (error || !data.session) {
-        // dacă nu există sesiune validă → logout curat
-        await supabase.auth.signOut();
-        localStorage.removeItem("supabase.auth.token");
+        if (data.session?.user) {
+          setUser(data.session.user);
+          await loadProfile(data.session.user.id);
+        } else {
+          // fallback dacă sesiunea nu e în cache
+          const { data: userData } = await supabase.auth.getUser();
+          if (userData?.user) {
+            setUser(userData.user);
+            await loadProfile(userData.user.id);
+          } else {
+            setUser(null);
+            setProfile(null);
+          }
+        }
+      } catch (err) {
+        console.error("❌ getInitialSession failed:", err);
         setUser(null);
         setProfile(null);
+      } finally {
         setLoading(false);
-        return;
       }
-
-      const session: Session = data.session;
-      setUser(session.user);
-      await loadProfile(session.user.id);
-      setLoading(false);
     };
 
     getInitialSession();
 
-    // ascultă evenimentele de auth
+    // Ascultă evenimentele de auth
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
+        console.log("🔄 Auth event:", event);
+
         if (event === "SIGNED_OUT" || !session) {
           setUser(null);
           setProfile(null);
-          setLoading(false);
-          localStorage.removeItem("supabase.auth.token");
           navigate("/login", { replace: true });
+          setLoading(false);
           return;
         }
 
-        if (event === "TOKEN_REFRESHED" && session) {
-          setUser(session.user);
-          await loadProfile(session.user.id);
-        }
-
-        if (event === "SIGNED_IN" && session) {
+        if (session?.user) {
           setUser(session.user);
           await loadProfile(session.user.id);
         }
@@ -99,18 +104,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (!error && data) {
       setProfile(data as Profile);
+    } else {
+      console.warn("⚠️ Profile not found for user:", userId);
+      setProfile(null);
     }
   };
 
   const signOut = async () => {
-    await supabase.auth.signOut();
-
-    // curățăm și manual localStorage
-    localStorage.removeItem("supabase.auth.token");
+    const { error } = await supabase.auth.signOut();
+    if (error) console.error("❌ Logout error:", error.message);
 
     setUser(null);
     setProfile(null);
-
     navigate("/login", { replace: true });
   };
 
