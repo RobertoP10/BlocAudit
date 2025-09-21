@@ -48,22 +48,23 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    // 🔄 verifică sesiunea la start
     const getInitialSession = async () => {
       try {
         const { data, error } = await supabase.auth.getSession();
-        if (error) console.error("❌ getSession error:", error.message);
 
-        if (data.session?.user) {
-          console.log("✅ Session found:", data.session.user.email);
-          setUser(data.session.user);
-          await loadProfile(data.session.user.id);
-        } else {
-          console.log("⚠️ No active session, clearing tokens...");
+        // dacă nu există sesiune validă → curățăm tokenurile
+        if (error || !data.session) {
+          console.log("⚠️ Invalid or missing session, clearing tokens...");
           clearSupabaseTokens();
           setUser(null);
           setProfile(null);
+          setLoading(false);
+          return;
         }
+
+        console.log("✅ Session active:", data.session.user.email);
+        setUser(data.session.user);
+        await loadProfile(data.session.user.id);
       } catch (err) {
         console.error("❌ getInitialSession failed:", err);
         clearSupabaseTokens();
