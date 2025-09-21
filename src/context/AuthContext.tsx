@@ -44,15 +44,18 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         if (error) console.error("❌ getSession error:", error.message);
 
         if (data.session?.user) {
+          console.log("✅ Session found:", data.session.user.email);
           setUser(data.session.user);
           await loadProfile(data.session.user.id);
         } else {
-          // fallback dacă sesiunea nu e în cache
+          // fallback dacă sesiunea nu e încărcată corect
           const { data: userData } = await supabase.auth.getUser();
           if (userData?.user) {
+            console.log("✅ getUser fallback:", userData.user.email);
             setUser(userData.user);
             await loadProfile(userData.user.id);
           } else {
+            console.log("⚠️ No active session");
             setUser(null);
             setProfile(null);
           }
@@ -68,7 +71,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     getInitialSession();
 
-    // Ascultă evenimentele de auth
+    // ascultă evenimentele de auth
     const { data: listener } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log("🔄 Auth event:", event);
@@ -113,6 +116,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) console.error("❌ Logout error:", error.message);
+
+    // curățăm orice sesiune Supabase salvată în localStorage
+    for (const key in localStorage) {
+      if (key.startsWith("sb-") && key.includes("-auth-token")) {
+        localStorage.removeItem(key);
+      }
+    }
 
     setUser(null);
     setProfile(null);
