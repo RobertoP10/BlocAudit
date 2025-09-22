@@ -50,66 +50,52 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const getInitialSession = async () => {
-      try {
-        const { data, error } = await supabase.auth.getSession();
+    const initAuth = async () => {
+      const { data, error } = await supabase.auth.getSession();
 
-        if (error || !data.session) {
-          console.log("⚠️ Invalid or missing session, clearing tokens...");
-          clearSupabaseTokens();
-          setUser(null);
-          setProfile(null);
-          setLoading(false);
-          return;
-        }
-
-        console.log("✅ Session active:", data.session.user.email);
-        setUser(data.session.user);
-        await loadProfile(data.session.user.id);
-      } catch (err) {
-        console.error("❌ getInitialSession failed:", err);
+      if (error || !data.session) {
+        console.log("⚠️ No valid session, clearing tokens...");
+        await supabase.auth.signOut(); // forțăm curățarea și în Supabase
         clearSupabaseTokens();
         setUser(null);
         setProfile(null);
-      } finally {
         setLoading(false);
+        return;
       }
+
+      console.log("✅ Active session:", data.session.user.email);
+      setUser(data.session.user);
+      await loadProfile(data.session.user.id);
+      setLoading(false);
     };
 
-    getInitialSession();
+    initAuth();
 
-    // 📡 subscribe la evenimentele de auth
-    const { data: listener } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        console.log("🔔 Auth event:", event);
+    // 📡 subscribe la evenimente de auth
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log("🔔 Auth event:", event);
 
-        if (event === "SIGNED_OUT" || !session) {
-          clearSupabaseTokens();
-          setUser(null);
-          setProfile(null);
-          setLoading(false);
-          navigate("/login", { replace: true });
-          return;
-        }
+      if (event === "SIGNED_OUT" || !session) {
+        clearSupabaseTokens();
+        setUser(null);
+        setProfile(null);
+        setLoading(false);
+        navigate("/login", { replace: true });
+        return;
+      }
 
-        if (event === "TOKEN_REFRESHED" && session) {
-          console.log("🔄 Token refreshed");
-          setUser(session.user);
-          await loadProfile(session.user.id);
-        }
-
-        if (event === "SIGNED_IN" && session) {
-          console.log("✅ Signed in:", session.user.email);
-          setUser(session.user);
-          await loadProfile(session.user.id);
-        }
-
+      if (["SIGNED_IN", "TOKEN_REFRESHED", "USER_UPDATED"].includes(event) && session) {
+        console.log("🔄 Session updated:", session.user.email);
+        setUser(session.user);
+        await loadProfile(session.user.id);
         setLoading(false);
       }
-    );
+    });
 
     return () => {
-      listener.subscription.unsubscribe();
+      subscription.unsubscribe();
     };
   }, [navigate]);
 
@@ -123,6 +109,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (!error && data) {
       setProfile(data as Profile);
+    } else {
+      console.warn("⚠️ Profile not found for user:", userId);
     }
   };
 
