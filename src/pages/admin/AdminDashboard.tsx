@@ -81,11 +81,18 @@ export default function AdminDashboard() {
   // Asociații
   const loadAssociations = async () => {
     if (!profile?.company_id) return;
-    const { data } = await supabase
+
+    const { data, error } = await supabase
       .from("associations")
       .select("id, name, address")
       .eq("company_id", profile.company_id);
-    setAssociations(data || []);
+
+    if (error) {
+      console.error("❌ Eroare fetch associations:", error.message);
+      setAssociations([]);
+    } else {
+      setAssociations(data || []);
+    }
   };
 
   const handleCreateAssociation = async () => {
@@ -107,11 +114,18 @@ export default function AdminDashboard() {
   // Utilizatori
   const loadUsers = async () => {
     if (!profile?.company_id) return;
-    const { data } = await supabase
+
+    const { data, error } = await supabase
       .from("app_users")
       .select("id, full_name, role, email, association_id")
       .eq("company_id", profile.company_id);
-    setUsers(data || []);
+
+    if (error) {
+      console.error("❌ Eroare fetch users:", error.message);
+      setUsers([]);
+    } else {
+      setUsers(data || []);
+    }
   };
 
   const handleCreateUser = async () => {
