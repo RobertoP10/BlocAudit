@@ -8,8 +8,8 @@ interface StatCardProps {
 
 export default function StatCard({ icon, label, value }: StatCardProps) {
   return (
-    <div className="p-6 bg-white shadow rounded-xl flex flex-col items-center">
-      {icon}
+    <div className="p-6 bg-white shadow rounded-xl flex flex-col items-center text-center">
+      <div className="mb-2">{icon}</div>
       <p className="text-sm text-gray-500">{label}</p>
       <p className="text-2xl font-bold">{value}</p>
     </div>
