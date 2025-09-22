@@ -5,7 +5,7 @@ import {
   useState,
   ReactNode,
 } from "react";
-import { Session, User } from "@supabase/supabase-js";
+import { User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabaseClient";
 import { useNavigate } from "react-router-dom";
 
@@ -51,27 +51,36 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   useEffect(() => {
     const initAuth = async () => {
-      const { data, error } = await supabase.auth.getSession();
+      try {
+        const { data, error } = await supabase.auth.getSession();
 
-      if (error || !data.session) {
-        console.log("⚠️ No valid session, clearing tokens...");
-        await supabase.auth.signOut(); // forțăm curățarea și în Supabase
+        if (error || !data.session) {
+          console.log("⚠️ No valid session, forcing signOut...");
+          await supabase.auth.signOut(); // curăță și serverul
+          clearSupabaseTokens(); // curăță și localStorage
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+          return;
+        }
+
+        console.log("✅ Active session:", data.session.user.email);
+        setUser(data.session.user);
+        await loadProfile(data.session.user.id);
+      } catch (err) {
+        console.error("❌ initAuth failed:", err);
+        await supabase.auth.signOut();
         clearSupabaseTokens();
         setUser(null);
         setProfile(null);
+      } finally {
         setLoading(false);
-        return;
       }
-
-      console.log("✅ Active session:", data.session.user.email);
-      setUser(data.session.user);
-      await loadProfile(data.session.user.id);
-      setLoading(false);
     };
 
     initAuth();
 
-    // 📡 subscribe la evenimente de auth
+    // 📡 subscribe la evenimentele de auth
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange(async (event, session) => {
@@ -90,8 +99,9 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         console.log("🔄 Session updated:", session.user.email);
         setUser(session.user);
         await loadProfile(session.user.id);
-        setLoading(false);
       }
+
+      setLoading(false);
     });
 
     return () => {
