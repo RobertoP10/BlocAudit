@@ -54,18 +54,10 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const { data, error } = await supabase.auth.getSession();
 
-        if (error) {
-          console.error("⚠️ Session error, forcing signOut...");
-          await supabase.auth.signOut();
-          clearSupabaseTokens();
-          setUser(null);
-          setProfile(null);
-          setLoading(false);
-          return;
-        }
-
-        if (!data.session) {
-          console.log("ℹ️ No session yet, waiting for SIGNED_IN event...");
+        if (error || !data.session) {
+          console.log("⚠️ No valid session, forcing signOut...");
+          await supabase.auth.signOut(); // curăță și serverul
+          clearSupabaseTokens(); // curăță storage local
           setUser(null);
           setProfile(null);
           setLoading(false);
@@ -77,6 +69,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         await loadProfile(data.session.user.id);
       } catch (err) {
         console.error("❌ initAuth failed:", err);
+        await supabase.auth.signOut();
         clearSupabaseTokens();
         setUser(null);
         setProfile(null);
@@ -148,7 +141,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
   return (
     <AuthContext.Provider value={{ user, profile, loading, signOut }}>
-      {children}
+      {!loading && children}
     </AuthContext.Provider>
   );
 }
