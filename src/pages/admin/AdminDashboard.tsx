@@ -81,25 +81,21 @@ export default function AdminDashboard() {
   // Asociații
   const loadAssociations = async () => {
     if (!profile?.company_id) return;
-
     const { data, error } = await supabase
       .from("associations")
-      .select("id, name, address")
+      .select("id, name")
       .eq("company_id", profile.company_id);
 
     if (error) {
       console.error("❌ Eroare fetch associations:", error.message);
-      setAssociations([]);
-    } else {
-      setAssociations(data || []);
     }
+    setAssociations(data || []);
   };
 
   const handleCreateAssociation = async () => {
     if (!newAssociation.name) return;
     await supabase.from("associations").insert({
       name: newAssociation.name,
-      address: newAssociation.address,
       company_id: profile?.company_id,
     });
     setNewAssociation({ name: "", address: "" });
@@ -114,18 +110,21 @@ export default function AdminDashboard() {
   // Utilizatori
   const loadUsers = async () => {
     if (!profile?.company_id) return;
-
     const { data, error } = await supabase
       .from("app_users")
-      .select("id, full_name, role, email, association_id")
+      .select(`
+        id,
+        full_name,
+        role,
+        association_id,
+        auth:auth.users(email)
+      `)
       .eq("company_id", profile.company_id);
 
     if (error) {
       console.error("❌ Eroare fetch users:", error.message);
-      setUsers([]);
-    } else {
-      setUsers(data || []);
     }
+    setUsers(data || []);
   };
 
   const handleCreateUser = async () => {
@@ -218,15 +217,6 @@ export default function AdminDashboard() {
             }
             className="border p-2 rounded w-1/4"
           />
-          <input
-            type="text"
-            placeholder="Adresă"
-            value={newAssociation.address}
-            onChange={(e) =>
-              setNewAssociation({ ...newAssociation, address: e.target.value })
-            }
-            className="border p-2 rounded w-1/2"
-          />
           <button
             onClick={handleCreateAssociation}
             className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
@@ -240,7 +230,6 @@ export default function AdminDashboard() {
           <thead>
             <tr className="bg-gray-100 text-left">
               <th className="p-2 border">Nume</th>
-              <th className="p-2 border">Adresă</th>
               <th className="p-2 border">Acțiuni</th>
             </tr>
           </thead>
@@ -248,7 +237,6 @@ export default function AdminDashboard() {
             {associations.map((a) => (
               <tr key={a.id} className="border-t">
                 <td className="p-2">{a.name}</td>
-                <td className="p-2">{a.address}</td>
                 <td className="p-2">
                   <button
                     onClick={() => handleDeleteAssociation(a.id)}
@@ -336,7 +324,7 @@ export default function AdminDashboard() {
             {users.map((u) => (
               <tr key={u.id} className="border-t">
                 <td className="p-2">{u.full_name}</td>
-                <td className="p-2">{u.email}</td>
+                <td className="p-2">{u.auth?.email || "-"}</td>
                 <td className="p-2">{u.role}</td>
                 <td className="p-2">
                   {associations.find((a) => a.id === u.association_id)?.name ||
