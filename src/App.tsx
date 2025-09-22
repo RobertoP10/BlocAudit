@@ -31,9 +31,9 @@ import Contact from "./pages/legal/Contact";
 import { AuthProvider, useAuth } from "./context/AuthContext";
 
 // Components
-import Sidebar from "./components/Sidebar"; // aici era componenta Sidebar
+import Sidebar from "./components/Sidebar";
 
-// 🔒 Componentă pentru protecția rutelor
+// 🔒 ProtectedRoute corectat
 function ProtectedRoute({
   children,
   allowedRoles,
@@ -43,12 +43,18 @@ function ProtectedRoute({
 }) {
   const { user, profile, loading } = useAuth();
 
+  // așteptăm sesiunea
   if (loading) return <div className="p-8 text-center">Se încarcă...</div>;
-  if (!user) return <Navigate to="/login" replace />;
+
+  // dacă nu există user → mergem la Funnel
+  if (!user) return <Navigate to="/" replace />;
+
+  // dacă userul există dar nu are rolul potrivit → tot la Funnel
   if (!profile || !allowedRoles.includes(profile.role)) {
-    return <Navigate to="/login" replace />;
+    return <Navigate to="/" replace />;
   }
 
+  // altfel → afișăm dashboard-ul
   return <>{children}</>;
 }
 
@@ -73,11 +79,14 @@ function Layout() {
       {!hideSidebar && <Sidebar />}
       <main className="flex-1 bg-gray-50 min-h-screen">
         <Routes>
-          {/* Prima pagină → FunnelPage */}
+          {/* Public */}
           <Route path="/" element={<FunnelPage />} />
-
-          {/* LandingPage */}
           <Route path="/landing" element={<LandingPage />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/gdpr" element={<GDPR />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/contact" element={<Contact />} />
 
           {/* Dashboards protejate */}
           <Route
@@ -121,14 +130,8 @@ function Layout() {
             }
           />
 
-          {/* Auth */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-
-          {/* Legal */}
-          <Route path="/gdpr" element={<GDPR />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/contact" element={<Contact />} />
+          {/* fallback → duce spre Funnel */}
+          <Route path="*" element={<Navigate to="/" />} />
         </Routes>
       </main>
     </div>
