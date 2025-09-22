@@ -180,7 +180,7 @@ export default function AdminDashboard() {
     }
 
     const res = await fetch(
-      `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/create-user`,
+      `${import.meta.env.VITE_SUPABASE_FUNCTIONS_URL}/create-user`,
       {
         method: "POST",
         headers: {
