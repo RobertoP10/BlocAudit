@@ -7,7 +7,6 @@ import {
 } from "react";
 import { User } from "@supabase/supabase-js";
 import { supabase } from "../lib/supabaseClient";
-import { useNavigate } from "react-router-dom";
 
 type Profile = {
   id: string;
@@ -31,7 +30,7 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
 });
 
-// 🧹 helper: șterge toate cheile Supabase token din localStorage și sessionStorage
+// 🧹 helper pentru curățarea tokenurilor supabase
 const clearSupabaseTokens = () => {
   [localStorage, sessionStorage].forEach((storage) => {
     Object.keys(storage).forEach((key) => {
@@ -47,29 +46,24 @@ export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
-  const navigate = useNavigate();
 
   useEffect(() => {
-    const initAuth = async () => {
+    const getInitialSession = async () => {
       try {
         const { data, error } = await supabase.auth.getSession();
 
         if (error || !data.session) {
-          console.log("⚠️ No valid session, forcing signOut...");
-          await supabase.auth.signOut(); // curăță și serverul
-          clearSupabaseTokens(); // curăță storage local
+          clearSupabaseTokens();
           setUser(null);
           setProfile(null);
-          setLoading(false);
           return;
         }
 
-        console.log("✅ Active session:", data.session.user.email);
+        console.log("✅ Session active:", data.session.user.email);
         setUser(data.session.user);
         await loadProfile(data.session.user.id);
       } catch (err) {
-        console.error("❌ initAuth failed:", err);
-        await supabase.auth.signOut();
+        console.error("❌ getInitialSession failed:", err);
         clearSupabaseTokens();
         setUser(null);
         setProfile(null);
@@ -78,36 +72,34 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       }
     };
 
-    initAuth();
+    getInitialSession();
 
-    // 📡 subscribe la evenimentele de auth
-    const {
-      data: { subscription },
-    } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log("🔔 Auth event:", event);
+    // 📡 subscribe la schimbări de auth
+    const { data: listener } = supabase.auth.onAuthStateChange(
+      async (event, session) => {
+        console.log("🔔 Auth event:", event);
 
-      if (event === "SIGNED_OUT" || !session) {
-        clearSupabaseTokens();
-        setUser(null);
-        setProfile(null);
+        if (event === "SIGNED_OUT" || !session) {
+          clearSupabaseTokens();
+          setUser(null);
+          setProfile(null);
+          setLoading(false);
+          return;
+        }
+
+        if (session) {
+          setUser(session.user);
+          await loadProfile(session.user.id);
+        }
+
         setLoading(false);
-        navigate("/login", { replace: true });
-        return;
       }
-
-      if (["SIGNED_IN", "TOKEN_REFRESHED", "USER_UPDATED"].includes(event) && session) {
-        console.log("🔄 Session updated:", session.user.email);
-        setUser(session.user);
-        await loadProfile(session.user.id);
-      }
-
-      setLoading(false);
-    });
+    );
 
     return () => {
-      subscription.unsubscribe();
+      listener.subscription.unsubscribe();
     };
-  }, [navigate]);
+  }, []);
 
   // 📥 încarcă profilul din app_users
   const loadProfile = async (userId: string) => {
@@ -119,8 +111,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     if (!error && data) {
       setProfile(data as Profile);
-    } else {
-      console.warn("⚠️ Profile not found for user:", userId);
     }
   };
 
@@ -135,13 +125,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       clearSupabaseTokens();
       setUser(null);
       setProfile(null);
-      navigate("/login", { replace: true });
     }
   };
 
   return (
     <AuthContext.Provider value={{ user, profile, loading, signOut }}>
-      {!loading && children}
+      {children}
     </AuthContext.Provider>
   );
 }

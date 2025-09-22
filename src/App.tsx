@@ -33,7 +33,7 @@ import { AuthProvider, useAuth } from "./context/AuthContext";
 // Components
 import Sidebar from "./components/Sidebar";
 
-// 🔒 ProtectedRoute corectat
+// 🔒 Componentă pentru protecția rutelor
 function ProtectedRoute({
   children,
   allowedRoles,
@@ -43,18 +43,18 @@ function ProtectedRoute({
 }) {
   const { user, profile, loading } = useAuth();
 
-  // așteptăm sesiunea
   if (loading) return <div className="p-8 text-center">Se încarcă...</div>;
 
-  // dacă nu există user → mergem la Funnel
-  if (!user) return <Navigate to="/" replace />;
-
-  // dacă userul există dar nu are rolul potrivit → tot la Funnel
-  if (!profile || !allowedRoles.includes(profile.role)) {
-    return <Navigate to="/" replace />;
+  if (!user) {
+    // dacă nu e logat → trimite la login
+    return <Navigate to="/login" replace />;
   }
 
-  // altfel → afișăm dashboard-ul
+  if (!profile || !allowedRoles.includes(profile.role)) {
+    // dacă nu are rol valid → trimite la login
+    return <Navigate to="/login" replace />;
+  }
+
   return <>{children}</>;
 }
 
@@ -79,14 +79,11 @@ function Layout() {
       {!hideSidebar && <Sidebar />}
       <main className="flex-1 bg-gray-50 min-h-screen">
         <Routes>
-          {/* Public */}
+          {/* Prima pagină → FunnelPage (publică) */}
           <Route path="/" element={<FunnelPage />} />
+
+          {/* LandingPage (publică) */}
           <Route path="/landing" element={<LandingPage />} />
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
-          <Route path="/gdpr" element={<GDPR />} />
-          <Route path="/terms" element={<Terms />} />
-          <Route path="/contact" element={<Contact />} />
 
           {/* Dashboards protejate */}
           <Route
@@ -130,8 +127,17 @@ function Layout() {
             }
           />
 
-          {/* fallback → duce spre Funnel */}
-          <Route path="*" element={<Navigate to="/" />} />
+          {/* Auth */}
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+
+          {/* Legal */}
+          <Route path="/gdpr" element={<GDPR />} />
+          <Route path="/terms" element={<Terms />} />
+          <Route path="/contact" element={<Contact />} />
+
+          {/* fallback → dacă ruta nu există, du-l la Funnel */}
+          <Route path="*" element={<Navigate to="/" replace />} />
         </Routes>
       </main>
     </div>
