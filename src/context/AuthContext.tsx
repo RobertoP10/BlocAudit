@@ -31,13 +31,15 @@ const AuthContext = createContext<AuthContextType>({
   signOut: async () => {},
 });
 
-// 🧹 helper: șterge toate cheile Supabase token din localStorage
+// 🧹 helper: șterge toate cheile Supabase token din localStorage și sessionStorage
 const clearSupabaseTokens = () => {
-  Object.keys(localStorage).forEach((key) => {
-    if (key.startsWith("sb-") && key.includes("-auth-token")) {
-      localStorage.removeItem(key);
-      console.log("🧹 Removed token:", key);
-    }
+  [localStorage, sessionStorage].forEach((storage) => {
+    Object.keys(storage).forEach((key) => {
+      if (key.startsWith("sb-") && key.includes("-auth-token")) {
+        storage.removeItem(key);
+        console.log("🧹 Removed token:", key);
+      }
+    });
   });
 };
 
@@ -52,7 +54,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       try {
         const { data, error } = await supabase.auth.getSession();
 
-        // dacă nu există sesiune validă → curățăm tokenurile
         if (error || !data.session) {
           console.log("⚠️ Invalid or missing session, clearing tokens...");
           clearSupabaseTokens();

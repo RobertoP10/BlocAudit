@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { useNavigate } from "react-router-dom";
+import { useNavigate, Link } from "react-router-dom";
 import { Mail, Lock } from "lucide-react";
 import { supabase } from "../../lib/supabaseClient";
 import { useAuth } from "../../context/AuthContext";
@@ -9,9 +9,9 @@ export default function Login() {
   const [password, setPassword] = useState("");
   const [error, setError] = useState("");
   const navigate = useNavigate();
-  const { profile, user } = useAuth();
+  const { profile } = useAuth();
 
-  // 🔄 După login, redirect în funcție de rol
+  // 🔄 Dacă ești deja logat, te redirecționează automat
   useEffect(() => {
     if (profile?.role) {
       switch (profile.role) {
@@ -50,18 +50,17 @@ export default function Login() {
       setError(loginError.message);
       return;
     }
-
-    // ✅ AuthContext va prelua user-ul și profilul automat
   };
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-gradient-to-r from-[#3B82F6] via-[#6366F1] to-[#9333EA] relative">
-      <a
-        href="/"
+      {/* Buton înapoi (Link, nu href) */}
+      <Link
+        to="/"
         className="absolute top-4 left-4 text-white bg-indigo-600 px-3 py-1 rounded-lg text-sm hover:bg-indigo-700 transition"
       >
         ← Înapoi la Homepage
-      </a>
+      </Link>
 
       <div className="w-full max-w-md bg-white/90 backdrop-blur-lg shadow-2xl rounded-2xl p-8 border border-indigo-100 animate-fade-in-down">
         <h1 className="text-3xl font-bold text-center text-indigo-600 mb-2">
@@ -118,12 +117,12 @@ export default function Login() {
 
         <div className="text-center text-sm text-gray-500">
           Nu ai cont?{" "}
-          <a
-            href="/register"
+          <Link
+            to="/register"
             className="text-indigo-600 font-medium hover:underline"
           >
             Creează unul
-          </a>
+          </Link>
         </div>
       </div>
     </div>
