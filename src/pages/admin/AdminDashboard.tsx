@@ -26,6 +26,8 @@ interface Association {
   id: string;
   name: string;
   address?: string;
+  email: string;
+  phone: string;
 }
 
 interface AppUser {
@@ -48,7 +50,12 @@ export default function AdminDashboard() {
   });
 
   const [associations, setAssociations] = useState<Association[]>([]);
-  const [newAssociation, setNewAssociation] = useState({ name: "", address: "" });
+  const [newAssociation, setNewAssociation] = useState({
+    name: "",
+    address: "",
+    email: "",
+    phone: "",
+  });
 
   const [users, setUsers] = useState<AppUser[]>([]);
   const [newUser, setNewUser] = useState({
@@ -117,7 +124,7 @@ export default function AdminDashboard() {
     if (!profile?.company_id) return;
     const { data, error } = await supabase
       .from("associations")
-      .select("id, name, address, company_id")
+      .select("id, name, address, email, phone, company_id")
       .eq("company_id", profile.company_id);
 
     if (error) {
@@ -127,15 +134,24 @@ export default function AdminDashboard() {
   };
 
   const handleCreateAssociation = async () => {
-    if (!newAssociation.name.trim())
-      return alert("⚠️ Numele asociației este obligatoriu");
-    await supabase.from("associations").insert({
+    if (!newAssociation.name || !newAssociation.email || !newAssociation.phone) {
+      return alert("⚠️ Nume, email și telefon sunt obligatorii");
+    }
+
+    const { error } = await supabase.from("associations").insert({
       name: newAssociation.name,
       address: newAssociation.address,
+      email: newAssociation.email,
+      phone: newAssociation.phone,
       company_id: profile?.company_id,
     });
-    setNewAssociation({ name: "", address: "" });
-    loadAssociations();
+
+    if (error) {
+      alert("❌ Eroare la creare asociație: " + error.message);
+    } else {
+      setNewAssociation({ name: "", address: "", email: "", phone: "" });
+      loadAssociations();
+    }
   };
 
   const handleDeleteAssociation = async (id: string) => {
@@ -262,7 +278,25 @@ export default function AdminDashboard() {
                 onChange={(e) =>
                   setNewAssociation({ ...newAssociation, address: e.target.value })
                 }
-                className="border p-2 rounded w-1/2 min-w-[200px]"
+                className="border p-2 rounded w-1/4 min-w-[200px]"
+              />
+              <input
+                type="email"
+                placeholder="Email"
+                value={newAssociation.email}
+                onChange={(e) =>
+                  setNewAssociation({ ...newAssociation, email: e.target.value })
+                }
+                className="border p-2 rounded w-1/4 min-w-[200px]"
+              />
+              <input
+                type="tel"
+                placeholder="Telefon"
+                value={newAssociation.phone}
+                onChange={(e) =>
+                  setNewAssociation({ ...newAssociation, phone: e.target.value })
+                }
+                className="border p-2 rounded w-1/4 min-w-[200px]"
               />
               <button
                 onClick={handleCreateAssociation}
@@ -281,6 +315,8 @@ export default function AdminDashboard() {
                     <tr className="bg-gray-100 text-left">
                       <th className="p-2 border">Nume</th>
                       <th className="p-2 border">Adresă</th>
+                      <th className="p-2 border">Email</th>
+                      <th className="p-2 border">Telefon</th>
                       <th className="p-2 border">Acțiuni</th>
                     </tr>
                   </thead>
@@ -289,6 +325,8 @@ export default function AdminDashboard() {
                       <tr key={a.id} className="border-t">
                         <td className="p-2">{a.name}</td>
                         <td className="p-2">{a.address || "-"}</td>
+                        <td className="p-2">{a.email}</td>
+                        <td className="p-2">{a.phone}</td>
                         <td className="p-2">
                           <button
                             onClick={() => handleDeleteAssociation(a.id)}
