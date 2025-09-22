@@ -12,21 +12,45 @@ import {
   Loader2,
 } from "lucide-react";
 
+import StatCard from "../../components/ui/StatCard";
+import SectionCard from "../../components/ui/SectionCard";
+
+interface Stats {
+  requests: number;
+  associations: number;
+  users: number;
+  planUsage: number;
+}
+
+interface Association {
+  id: string;
+  name: string;
+  address?: string;
+}
+
+interface AppUser {
+  id: string;
+  email: string;
+  full_name: string;
+  role: string;
+  association_id?: string;
+}
+
 export default function AdminDashboard() {
   const { signOut, profile } = useAuth();
 
   const [loading, setLoading] = useState(false);
-  const [stats, setStats] = useState({
+  const [stats, setStats] = useState<Stats>({
     requests: 0,
     associations: 0,
     users: 0,
     planUsage: 0,
   });
 
-  const [associations, setAssociations] = useState<any[]>([]);
+  const [associations, setAssociations] = useState<Association[]>([]);
   const [newAssociation, setNewAssociation] = useState({ name: "", address: "" });
 
-  const [users, setUsers] = useState<any[]>([]);
+  const [users, setUsers] = useState<AppUser[]>([]);
   const [newUser, setNewUser] = useState({
     email: "",
     full_name: "",
@@ -93,7 +117,7 @@ export default function AdminDashboard() {
     if (!profile?.company_id) return;
     const { data, error } = await supabase
       .from("associations")
-      .select("id, name, company_id")
+      .select("id, name, address, company_id")
       .eq("company_id", profile.company_id);
 
     if (error) {
@@ -103,7 +127,8 @@ export default function AdminDashboard() {
   };
 
   const handleCreateAssociation = async () => {
-    if (!newAssociation.name.trim()) return alert("⚠️ Numele asociației este obligatoriu");
+    if (!newAssociation.name.trim())
+      return alert("⚠️ Numele asociației este obligatoriu");
     await supabase.from("associations").insert({
       name: newAssociation.name,
       address: newAssociation.address,
@@ -196,10 +221,26 @@ export default function AdminDashboard() {
         <>
           {/* Statistici */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
-            <StatCard icon={<FileText className="text-indigo-600 mb-2" size={28} />} label="Total Cereri" value={stats.requests} />
-            <StatCard icon={<Building2 className="text-green-600 mb-2" size={28} />} label="Asociații" value={stats.associations} />
-            <StatCard icon={<Users className="text-blue-600 mb-2" size={28} />} label="Utilizatori" value={stats.users} />
-            <StatCard icon={<Gauge className="text-purple-600 mb-2" size={28} />} label="Consum Plan" value={`${stats.planUsage}%`} />
+            <StatCard
+              icon={<FileText className="text-indigo-600 mb-2" size={28} />}
+              label="Total Cereri"
+              value={stats.requests}
+            />
+            <StatCard
+              icon={<Building2 className="text-green-600 mb-2" size={28} />}
+              label="Asociații"
+              value={stats.associations}
+            />
+            <StatCard
+              icon={<Users className="text-blue-600 mb-2" size={28} />}
+              label="Utilizatori"
+              value={stats.users}
+            />
+            <StatCard
+              icon={<Gauge className="text-purple-600 mb-2" size={28} />}
+              label="Consum Plan"
+              value={`${stats.planUsage}%`}
+            />
           </div>
 
           {/* Asociații */}
@@ -209,14 +250,18 @@ export default function AdminDashboard() {
                 type="text"
                 placeholder="Nume Asociație"
                 value={newAssociation.name}
-                onChange={(e) => setNewAssociation({ ...newAssociation, name: e.target.value })}
+                onChange={(e) =>
+                  setNewAssociation({ ...newAssociation, name: e.target.value })
+                }
                 className="border p-2 rounded w-1/4 min-w-[200px]"
               />
               <input
                 type="text"
                 placeholder="Adresă"
                 value={newAssociation.address}
-                onChange={(e) => setNewAssociation({ ...newAssociation, address: e.target.value })}
+                onChange={(e) =>
+                  setNewAssociation({ ...newAssociation, address: e.target.value })
+                }
                 className="border p-2 rounded w-1/2 min-w-[200px]"
               />
               <button
@@ -227,33 +272,37 @@ export default function AdminDashboard() {
               </button>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-100 text-left">
-                    <th className="p-2 border">Nume</th>
-                    <th className="p-2 border">Adresă</th>
-                    <th className="p-2 border">Acțiuni</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {associations.map((a) => (
-                    <tr key={a.id} className="border-t">
-                      <td className="p-2">{a.name}</td>
-                      <td className="p-2">{a.address || "-"}</td>
-                      <td className="p-2">
-                        <button
-                          onClick={() => handleDeleteAssociation(a.id)}
-                          className="text-red-500 hover:text-red-700 flex items-center gap-1"
-                        >
-                          <Trash2 size={16} /> Șterge
-                        </button>
-                      </td>
+            {associations.length === 0 ? (
+              <p className="text-gray-500 italic">Nu există asociații încă.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-gray-100 text-left">
+                      <th className="p-2 border">Nume</th>
+                      <th className="p-2 border">Adresă</th>
+                      <th className="p-2 border">Acțiuni</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {associations.map((a) => (
+                      <tr key={a.id} className="border-t">
+                        <td className="p-2">{a.name}</td>
+                        <td className="p-2">{a.address || "-"}</td>
+                        <td className="p-2">
+                          <button
+                            onClick={() => handleDeleteAssociation(a.id)}
+                            className="text-red-500 hover:text-red-700 flex items-center gap-1"
+                          >
+                            <Trash2 size={16} /> Șterge
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </SectionCard>
 
           {/* Utilizatori */}
@@ -263,19 +312,25 @@ export default function AdminDashboard() {
                 type="text"
                 placeholder="Nume complet"
                 value={newUser.full_name}
-                onChange={(e) => setNewUser({ ...newUser, full_name: e.target.value })}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, full_name: e.target.value })
+                }
                 className="border p-2 rounded w-1/4 min-w-[200px]"
               />
               <input
                 type="email"
                 placeholder="Email"
                 value={newUser.email}
-                onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, email: e.target.value })
+                }
                 className="border p-2 rounded w-1/4 min-w-[200px]"
               />
               <select
                 value={newUser.role}
-                onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                onChange={(e) =>
+                  setNewUser({ ...newUser, role: e.target.value })
+                }
                 className="border p-2 rounded"
               >
                 <option value="client">Client</option>
@@ -286,7 +341,9 @@ export default function AdminDashboard() {
               {newUser.role === "client" && (
                 <select
                   value={newUser.association_id}
-                  onChange={(e) => setNewUser({ ...newUser, association_id: e.target.value })}
+                  onChange={(e) =>
+                    setNewUser({ ...newUser, association_id: e.target.value })
+                  }
                   className="border p-2 rounded"
                 >
                   <option value="">Fără asociație</option>
@@ -306,62 +363,47 @@ export default function AdminDashboard() {
               </button>
             </div>
 
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="bg-gray-100 text-left">
-                    <th className="p-2 border">Nume</th>
-                    <th className="p-2 border">Email</th>
-                    <th className="p-2 border">Rol</th>
-                    <th className="p-2 border">Asociație</th>
-                    <th className="p-2 border">Acțiuni</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {users.map((u) => (
-                    <tr key={u.id} className="border-t">
-                      <td className="p-2">{u.full_name}</td>
-                      <td className="p-2">{u.email}</td>
-                      <td className="p-2">{u.role}</td>
-                      <td className="p-2">
-                        {associations.find((a) => a.id === u.association_id)?.name || "-"}
-                      </td>
-                      <td className="p-2">
-                        <button
-                          onClick={() => handleDeleteUser(u.id)}
-                          className="text-red-500 hover:text-red-700 flex items-center gap-1"
-                        >
-                          <Trash2 size={16} /> Șterge
-                        </button>
-                      </td>
+            {users.length === 0 ? (
+              <p className="text-gray-500 italic">Nu există utilizatori încă.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-gray-100 text-left">
+                      <th className="p-2 border">Nume</th>
+                      <th className="p-2 border">Email</th>
+                      <th className="p-2 border">Rol</th>
+                      <th className="p-2 border">Asociație</th>
+                      <th className="p-2 border">Acțiuni</th>
                     </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+                  </thead>
+                  <tbody>
+                    {users.map((u) => (
+                      <tr key={u.id} className="border-t">
+                        <td className="p-2">{u.full_name}</td>
+                        <td className="p-2">{u.email}</td>
+                        <td className="p-2">{u.role}</td>
+                        <td className="p-2">
+                          {associations.find((a) => a.id === u.association_id)
+                            ?.name || "-"}
+                        </td>
+                        <td className="p-2">
+                          <button
+                            onClick={() => handleDeleteUser(u.id)}
+                            className="text-red-500 hover:text-red-700 flex items-center gap-1"
+                          >
+                            <Trash2 size={16} /> Șterge
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </SectionCard>
         </>
       )}
-    </div>
-  );
-}
-
-/* 🔹 Sub-componente pentru curățenie */
-function StatCard({ icon, label, value }: { icon: JSX.Element; label: string; value: string | number }) {
-  return (
-    <div className="p-6 bg-white shadow rounded-xl flex flex-col items-center">
-      {icon}
-      <p className="text-sm text-gray-500">{label}</p>
-      <p className="text-2xl font-bold">{value}</p>
-    </div>
-  );
-}
-
-function SectionCard({ title, color, children }: { title: string; color: string; children: React.ReactNode }) {
-  return (
-    <div className="p-6 bg-white shadow rounded-xl mb-8">
-      <h2 className={`text-xl font-semibold mb-4 ${color}`}>{title}</h2>
-      {children}
     </div>
   );
 }
