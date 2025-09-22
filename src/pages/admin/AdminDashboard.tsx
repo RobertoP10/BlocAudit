@@ -268,12 +268,167 @@ export default function AdminDashboard() {
 
           {/* Asociații */}
           <SectionCard title="Administrare Asociații" color="text-green-700">
-            {/* inputs pentru asociații */}
+            <div className="flex gap-4 mb-6 flex-wrap">
+              <input
+                type="text"
+                placeholder="Nume Asociație"
+                value={newAssociation.name}
+                onChange={(e) => setNewAssociation({ ...newAssociation, name: e.target.value })}
+                className="border p-2 rounded w-1/4 min-w-[200px]"
+              />
+              <input
+                type="text"
+                placeholder="Adresă"
+                value={newAssociation.address}
+                onChange={(e) => setNewAssociation({ ...newAssociation, address: e.target.value })}
+                className="border p-2 rounded w-1/4 min-w-[200px]"
+              />
+              <input
+                type="email"
+                placeholder="Email"
+                value={newAssociation.email}
+                onChange={(e) => setNewAssociation({ ...newAssociation, email: e.target.value })}
+                className="border p-2 rounded w-1/4 min-w-[200px]"
+              />
+              <input
+                type="tel"
+                placeholder="Telefon"
+                value={newAssociation.phone}
+                onChange={(e) => setNewAssociation({ ...newAssociation, phone: e.target.value })}
+                className="border p-2 rounded w-1/4 min-w-[200px]"
+              />
+              <button
+                onClick={handleCreateAssociation}
+                className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+              >
+                <Plus size={16} /> Creează
+              </button>
+            </div>
+
+            {associations.length === 0 ? (
+              <p className="text-gray-500 italic">Nu există asociații încă.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-gray-100 text-left">
+                      <th className="p-2 border">Nume</th>
+                      <th className="p-2 border">Adresă</th>
+                      <th className="p-2 border">Email</th>
+                      <th className="p-2 border">Telefon</th>
+                      <th className="p-2 border">Acțiuni</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {associations.map((a) => (
+                      <tr key={a.id} className="border-t">
+                        <td className="p-2">{a.name}</td>
+                        <td className="p-2">{a.address || "-"}</td>
+                        <td className="p-2">{a.email}</td>
+                        <td className="p-2">{a.phone}</td>
+                        <td className="p-2">
+                          <button
+                            onClick={() => handleDeleteAssociation(a.id)}
+                            className="text-red-500 hover:text-red-700 flex items-center gap-1"
+                          >
+                            <Trash2 size={16} /> Șterge
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </SectionCard>
 
           {/* Utilizatori */}
           <SectionCard title="Administrare Utilizatori" color="text-blue-700">
-            {/* inputs pentru useri + tabel */}
+            <div className="flex gap-4 mb-6 flex-wrap">
+              <input
+                type="text"
+                placeholder="Nume complet"
+                value={newUser.full_name}
+                onChange={(e) => setNewUser({ ...newUser, full_name: e.target.value })}
+                className="border p-2 rounded w-1/4 min-w-[200px]"
+              />
+              <input
+                type="email"
+                placeholder="Email"
+                value={newUser.email}
+                onChange={(e) => setNewUser({ ...newUser, email: e.target.value })}
+                className="border p-2 rounded w-1/4 min-w-[200px]"
+              />
+              <select
+                value={newUser.role}
+                onChange={(e) => setNewUser({ ...newUser, role: e.target.value })}
+                className="border p-2 rounded"
+              >
+                <option value="client">Client</option>
+                <option value="technical">Technical</option>
+                <option value="service">Service</option>
+              </select>
+
+              {newUser.role === "client" && (
+                <select
+                  value={newUser.association_id}
+                  onChange={(e) => setNewUser({ ...newUser, association_id: e.target.value })}
+                  className="border p-2 rounded"
+                >
+                  <option value="">Fără asociație</option>
+                  {associations.map((a) => (
+                    <option key={a.id} value={a.id}>
+                      {a.name}
+                    </option>
+                  ))}
+                </select>
+              )}
+
+              <button
+                onClick={handleCreateUser}
+                className="bg-blue-500 hover:bg-blue-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
+              >
+                <Plus size={16} /> Creează
+              </button>
+            </div>
+
+            {users.length === 0 ? (
+              <p className="text-gray-500 italic">Nu există utilizatori încă.</p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full border-collapse">
+                  <thead>
+                    <tr className="bg-gray-100 text-left">
+                      <th className="p-2 border">Nume</th>
+                      <th className="p-2 border">Email</th>
+                      <th className="p-2 border">Rol</th>
+                      <th className="p-2 border">Asociație</th>
+                      <th className="p-2 border">Acțiuni</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {users.map((u) => (
+                      <tr key={u.id} className="border-t">
+                        <td className="p-2">{u.full_name}</td>
+                        <td className="p-2">{u.email}</td>
+                        <td className="p-2">{u.role}</td>
+                        <td className="p-2">
+                          {associations.find((a) => a.id === u.association_id)?.name || "-"}
+                        </td>
+                        <td className="p-2">
+                          <button
+                            onClick={() => handleDeleteUser(u.id)}
+                            className="text-red-500 hover:text-red-700 flex items-center gap-1"
+                          >
+                            <Trash2 size={16} /> Șterge
+                          </button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
           </SectionCard>
         </>
       )}
