@@ -86,9 +86,7 @@ export default function AdminDashboard() {
       .select("id, name")
       .eq("company_id", profile.company_id);
 
-    if (error) {
-      console.error("❌ Eroare fetch associations:", error.message);
-    }
+    if (error) console.error("❌ Eroare fetch associations:", error.message);
     setAssociations(data || []);
   };
 
@@ -96,6 +94,7 @@ export default function AdminDashboard() {
     if (!newAssociation.name) return;
     await supabase.from("associations").insert({
       name: newAssociation.name,
+      address: newAssociation.address,
       company_id: profile?.company_id,
     });
     setNewAssociation({ name: "", address: "" });
@@ -112,18 +111,10 @@ export default function AdminDashboard() {
     if (!profile?.company_id) return;
     const { data, error } = await supabase
       .from("app_users")
-      .select(`
-        id,
-        full_name,
-        role,
-        association_id,
-        auth:auth.users(email)
-      `)
+      .select("id, full_name, role, association_id, email")
       .eq("company_id", profile.company_id);
 
-    if (error) {
-      console.error("❌ Eroare fetch users:", error.message);
-    }
+    if (error) console.error("❌ Eroare fetch users:", error.message);
     setUsers(data || []);
   };
 
@@ -206,7 +197,6 @@ export default function AdminDashboard() {
           Administrare Asociații
         </h2>
 
-        {/* Formular creare */}
         <div className="flex gap-4 mb-6">
           <input
             type="text"
@@ -217,6 +207,15 @@ export default function AdminDashboard() {
             }
             className="border p-2 rounded w-1/4"
           />
+          <input
+            type="text"
+            placeholder="Adresă"
+            value={newAssociation.address}
+            onChange={(e) =>
+              setNewAssociation({ ...newAssociation, address: e.target.value })
+            }
+            className="border p-2 rounded w-1/2"
+          />
           <button
             onClick={handleCreateAssociation}
             className="bg-green-500 hover:bg-green-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
@@ -225,11 +224,11 @@ export default function AdminDashboard() {
           </button>
         </div>
 
-        {/* Lista Asociații */}
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-gray-100 text-left">
               <th className="p-2 border">Nume</th>
+              <th className="p-2 border">Adresă</th>
               <th className="p-2 border">Acțiuni</th>
             </tr>
           </thead>
@@ -237,6 +236,7 @@ export default function AdminDashboard() {
             {associations.map((a) => (
               <tr key={a.id} className="border-t">
                 <td className="p-2">{a.name}</td>
+                <td className="p-2">{a.address}</td>
                 <td className="p-2">
                   <button
                     onClick={() => handleDeleteAssociation(a.id)}
@@ -257,7 +257,6 @@ export default function AdminDashboard() {
           Administrare Utilizatori
         </h2>
 
-        {/* Formular creare */}
         <div className="flex gap-4 mb-6">
           <input
             type="text"
@@ -283,7 +282,6 @@ export default function AdminDashboard() {
             <option value="service">Service</option>
           </select>
 
-          {/* Dacă e client → selectează asociație */}
           {newUser.role === "client" && (
             <select
               value={newUser.association_id}
@@ -309,7 +307,6 @@ export default function AdminDashboard() {
           </button>
         </div>
 
-        {/* Lista utilizatori */}
         <table className="w-full border-collapse">
           <thead>
             <tr className="bg-gray-100 text-left">
@@ -324,11 +321,10 @@ export default function AdminDashboard() {
             {users.map((u) => (
               <tr key={u.id} className="border-t">
                 <td className="p-2">{u.full_name}</td>
-                <td className="p-2">{u.auth?.email || "-"}</td>
+                <td className="p-2">{u.email}</td>
                 <td className="p-2">{u.role}</td>
                 <td className="p-2">
-                  {associations.find((a) => a.id === u.association_id)?.name ||
-                    "-"}
+                  {associations.find((a) => a.id === u.association_id)?.name || "-"}
                 </td>
                 <td className="p-2">
                   <button
