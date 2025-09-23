@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import jsPDF from "jspdf";   // ⬅️ adaugă import sus, lângă celelalte
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabaseClient";
 import {
@@ -289,12 +290,70 @@ export default function AdminDashboard() {
     loadForms();
   };
 
+  import jsPDF from "jspdf";   // ⬅️ adaugă import sus, lângă celelalte
+
+...
+
+  // ---------------- EXPORT ----------------
   const exportCSV = () => {
-    alert("📄 Export CSV în lucru...");
+    if (forms.length === 0) {
+      alert("⚠️ Nu există formulare de exportat.");
+      return;
+    }
+
+    const header = ["Nume", "Tip", "Client", "Status", "Creat la"];
+    const rows = forms.map((f) => {
+      const client = users.find((c) => c.id === f.client_id);
+      return [
+        f.name,
+        f.type || "-",
+        client?.full_name || "-",
+        f.status,
+        new Date(f.created_at).toLocaleDateString("ro-RO"),
+      ];
+    });
+
+    const csvContent =
+      [header, ...rows].map((e) => e.join(",")).join("\n");
+
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.setAttribute("href", url);
+    link.setAttribute("download", "formulare.csv");
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const exportPDF = () => {
-    alert("📄 Export PDF în lucru...");
+    if (forms.length === 0) {
+      alert("⚠️ Nu există formulare de exportat.");
+      return;
+    }
+
+    const doc = new jsPDF();
+    doc.setFontSize(14);
+    doc.text("Raport Formulare", 14, 20);
+
+    let y = 30;
+    forms.forEach((f, index) => {
+      const client = users.find((c) => c.id === f.client_id);
+      doc.text(
+        `${index + 1}. ${f.name} | ${f.type || "-"} | ${
+          client?.full_name || "-"
+        } | ${f.status} | ${new Date(f.created_at).toLocaleDateString("ro-RO")}`,
+        14,
+        y
+      );
+      y += 10;
+      if (y > 270) {
+        doc.addPage();
+        y = 20;
+      }
+    });
+
+    doc.save("formulare.pdf");
   };
 
   // ---------------- RENDER ----------------
