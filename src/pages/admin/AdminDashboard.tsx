@@ -55,7 +55,9 @@ interface Form {
   name: string;
   description: string;
   created_at: string;
-  status: string; // "open" | "closed"
+  status: string;
+  type?: string;
+  client_id?: string;
 }
 
 export default function AdminDashboard() {
@@ -81,6 +83,7 @@ export default function AdminDashboard() {
   });
 
   const [users, setUsers] = useState<AppUser[]>([]);
+  const [clients, setClients] = useState<AppUser[]>([]);
   const [newUser, setNewUser] = useState({
     email: "",
     full_name: "",
@@ -89,7 +92,12 @@ export default function AdminDashboard() {
   });
 
   const [forms, setForms] = useState<Form[]>([]);
-  const [newForm, setNewForm] = useState({ name: "", description: "" });
+  const [newForm, setNewForm] = useState({
+    name: "",
+    description: "",
+    type: "",
+    client_id: "",
+  });
 
   useEffect(() => {
     if (!profile?.company_id) return;
@@ -210,6 +218,7 @@ export default function AdminDashboard() {
       console.error("❌ Eroare fetch users:", error.message);
     }
     setUsers(data || []);
+    setClients((data || []).filter((u) => u.role === "client"));
   };
 
   const handleCreateUser = async () => {
@@ -257,7 +266,7 @@ export default function AdminDashboard() {
     if (!profile?.company_id) return;
     const { data, error } = await supabase
       .from("forms")
-      .select("id, name, description, created_at, fields, status")
+      .select("id, name, description, created_at, status, type, client_id")
       .eq("company_id", profile.company_id);
 
     if (error) {
@@ -267,11 +276,15 @@ export default function AdminDashboard() {
   };
 
   const handleCreateForm = async () => {
-    if (!newForm.name.trim()) return alert("⚠️ Numele formularului este obligatoriu");
+    if (!newForm.name.trim() || !newForm.client_id) {
+      return alert("⚠️ Nume și client sunt obligatorii");
+    }
 
     const { error } = await supabase.from("forms").insert({
       name: newForm.name,
       description: newForm.description,
+      type: newForm.type,
+      client_id: newForm.client_id,
       company_id: profile?.company_id,
       fields: JSON.stringify([
         { type: "textarea", label: "Descriere constatare" },
@@ -284,7 +297,7 @@ export default function AdminDashboard() {
     if (error) {
       alert("❌ Eroare la creare formular: " + error.message);
     } else {
-      setNewForm({ name: "", description: "" });
+      setNewForm({ name: "", description: "", type: "", client_id: "" });
       loadForms();
     }
   };
@@ -295,6 +308,67 @@ export default function AdminDashboard() {
     loadForms();
   };
 
+  const handleCloseForm = async (id: string) => {
+    if (!confirm("Sigur vrei să închizi acest formular?")) return;
+    const { error } = await supabase
+      .from("forms")
+      .update({ status: "closed" })
+      .eq("id", id);
+    if (error) {
+      alert("❌ Eroare la închiderea formularului: " + error.message);
+    } else {
+      loadForms();
+    }
+  };
+
+  // ================= EXPORT =================
+  const exportCSV = () => {
+    const rows = [
+      ["ID", "Nume", "Tip", "Descriere", "Status", "Client", "Creat la"],
+      ...forms.map((f) => {
+        const client = clients.find((c) => c.id === f.client_id);
+        return [
+          f.id,
+          f.name,
+          f.type || "-",
+          f.description || "",
+          f.status,
+          client?.full_name || "-",
+          new Date(f.created_at).toLocaleDateString("ro-RO"),
+        ];
+      }),
+    ];
+    const csvContent =
+      "data:text/csv;charset=utf-8," +
+      rows.map((r) => r.join(",")).join("\n");
+    const link = document.createElement("a");
+    link.href = encodeURI(csvContent);
+    link.download = "formulare.csv";
+    link.click();
+  };
+
+  const exportPDF = () => {
+    const docContent = forms
+      .map((f) => {
+        const client = clients.find((c) => c.id === f.client_id);
+        return `Formular: ${f.name}\nTip: ${
+          f.type || "-"
+        }\nDescriere: ${f.description || "-"}\nStatus: ${
+          f.status
+        }\nClient: ${client?.full_name || "-"}\nCreat la: ${new Date(
+          f.created_at
+        ).toLocaleDateString("ro-RO")}\n\n`;
+      })
+      .join("");
+
+    const blob = new Blob([docContent], { type: "application/pdf" });
+    const link = document.createElement("a");
+    link.href = URL.createObjectURL(blob);
+    link.download = "formulare.pdf";
+    link.click();
+  };
+
+  // ================= UI =================
   return (
     <div className="p-6 min-h-screen bg-gray-50">
       {/* Header */}
@@ -314,14 +388,11 @@ export default function AdminDashboard() {
         </button>
       </div>
 
-      {/* Loader */}
-      {loading && (
+      {loading ? (
         <div className="flex justify-center items-center py-10">
           <Loader2 className="animate-spin text-indigo-600" size={32} />
         </div>
-      )}
-
-      {!loading && (
+      ) : (
         <>
           {/* Statistici */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
@@ -376,17 +447,46 @@ export default function AdminDashboard() {
 
           {/* Asociații */}
           <SectionCard title="Administrare Asociații" color="text-green-700">
-            {/* cod ca înainte */}
+            {/* aici rămâne codul tău existent pentru Asociații */}
           </SectionCard>
 
           {/* Utilizatori */}
           <SectionCard title="Administrare Utilizatori" color="text-blue-700">
-            {/* cod ca înainte */}
+            {/* aici rămâne codul tău existent pentru Utilizatori */}
           </SectionCard>
 
           {/* Formulare */}
           <SectionCard title="Administrare Formulare" color="text-purple-700">
             <div className="flex gap-4 mb-6 flex-wrap">
+              <select
+                value={newForm.type}
+                onChange={(e) => setNewForm({ ...newForm, type: e.target.value })}
+                className="border p-2 rounded"
+              >
+                <option value="">Selectează tip formular</option>
+                <option value="constatare">Constatare tehnică</option>
+                <option value="revizie">Revizie anuală</option>
+                <option value="interventie">Intervenție service</option>
+              </select>
+
+              <select
+                value={newForm.client_id}
+                onChange={(e) =>
+                  setNewForm({ ...newForm, client_id: e.target.value })
+                }
+                className="border p-2 rounded w-1/3"
+              >
+                <option value="">Selectează client</option>
+                {clients.map((c) => {
+                  const assoc = associations.find((a) => a.id === c.association_id);
+                  return (
+                    <option key={c.id} value={c.id}>
+                      {c.full_name} ({assoc?.name || "fără asociație"})
+                    </option>
+                  );
+                })}
+              </select>
+
               <input
                 type="text"
                 placeholder="Nume formular"
@@ -403,6 +503,7 @@ export default function AdminDashboard() {
                 }
                 className="border p-2 rounded w-1/2 min-w-[200px]"
               />
+
               <button
                 onClick={handleCreateForm}
                 className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
@@ -419,48 +520,6 @@ export default function AdminDashboard() {
                   <thead>
                     <tr className="bg-gray-100 text-left">
                       <th className="p-2 border">Nume</th>
-                      <th className="p-2 border">Descriere</th>
-                      <th className="p-2 border">Status</th>
-                      <th className="p-2 border">Creat la</th>
-                      <th className="p-2 border">Acțiuni</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {forms.map((f) => (
-                      <tr key={f.id} className="border-t">
-                        <td className="p-2">{f.name}</td>
-                        <td className="p-2">{f.description || "-"}</td>
-                        <td className="p-2">
-                          {f.status === "closed"
-                            ? "Închis (read-only)"
-                            : "Deschis"}
-                        </td>
-                        <td className="p-2">
-                          {new Date(f.created_at).toLocaleDateString("ro-RO")}
-                        </td>
-                        <td className="p-2">
-                          {f.status === "open" ? (
-                            <button
-                              onClick={() => handleDeleteForm(f.id)}
-                              className="text-red-500 hover:text-red-700 flex items-center gap-1"
-                            >
-                              <Trash2 size={16} /> Șterge
-                            </button>
-                          ) : (
-                            <span className="text-gray-400 italic">
-                              Doar vizualizare
-                            </span>
-                          )}
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </SectionCard>
-        </>
-      )}
-    </div>
-  );
-}
+                      <th className="p-2 border">Tip</th>
+                      <th className="p-2 border">Client</th>
+                      <th className="p-2 border">Status</th
