@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import jsPDF from "jspdf";   // ⬅️ adaugă import sus, lângă celelalte
+import jsPDF from "jspdf";
 import { useAuth } from "../../context/AuthContext";
 import { supabase } from "../../lib/supabaseClient";
 import {
@@ -82,6 +82,7 @@ export default function AdminDashboard() {
     client_id: "",
   });
 
+  // ------------------------------------------------
   useEffect(() => {
     if (!profile?.company_id) return;
     loadDashboard();
@@ -225,7 +226,7 @@ export default function AdminDashboard() {
 
     const data = await res.json();
     if (data.success) {
-      alert("✅ User creat cu succes!");
+      alert("✅ Utilizator creat cu succes!");
       setNewUser({
         email: "",
         full_name: "",
@@ -234,7 +235,7 @@ export default function AdminDashboard() {
       });
       loadUsers();
     } else {
-      alert("❌ Eroare la creare user: " + data.error);
+      alert("❌ Eroare la creare utilizator: " + data.error);
     }
   };
 
@@ -290,10 +291,6 @@ export default function AdminDashboard() {
     loadForms();
   };
 
-  import jsPDF from "jspdf";   // ⬅️ adaugă import sus, lângă celelalte
-
-...
-
   // ---------------- EXPORT ----------------
   const exportCSV = () => {
     if (forms.length === 0) {
@@ -313,9 +310,7 @@ export default function AdminDashboard() {
       ];
     });
 
-    const csvContent =
-      [header, ...rows].map((e) => e.join(",")).join("\n");
-
+    const csvContent = [header, ...rows].map((e) => e.join(",")).join("\n");
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
     const url = URL.createObjectURL(blob);
     const link = document.createElement("a");
@@ -426,7 +421,10 @@ export default function AdminDashboard() {
                 placeholder="Adresă"
                 value={newAssociation.address}
                 onChange={(e) =>
-                  setNewAssociation({ ...newAssociation, address: e.target.value })
+                  setNewAssociation({
+                    ...newAssociation,
+                    address: e.target.value,
+                  })
                 }
                 className="border p-2 rounded w-1/4 min-w-[200px]"
               />
@@ -575,8 +573,8 @@ export default function AdminDashboard() {
                         <td className="p-2">{u.email}</td>
                         <td className="p-2">{u.role}</td>
                         <td className="p-2">
-                          {associations.find((a) => a.id === u.association_id)?.name ||
-                            "-"}
+                          {associations.find((a) => a.id === u.association_id)
+                            ?.name || "-"}
                         </td>
                         <td className="p-2">
                           <button
