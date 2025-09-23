@@ -11,15 +11,6 @@ import {
   Trash2,
   Loader2,
 } from "lucide-react";
-import {
-  LineChart,
-  Line,
-  CartesianGrid,
-  XAxis,
-  YAxis,
-  Tooltip,
-  ResponsiveContainer,
-} from "recharts";
 
 import StatCard from "../../components/ui/StatCard";
 import SectionCard from "../../components/ui/SectionCard";
@@ -29,9 +20,6 @@ interface Stats {
   associations: number;
   users: number;
   planUsage: number;
-  userUsage: number;
-  requestLimit: number;
-  userLimit: number;
 }
 
 interface Association {
@@ -53,11 +41,10 @@ interface AppUser {
 interface Form {
   id: string;
   name: string;
-  description: string;
+  type: string;
+  client_id: string;
+  status: "open" | "closed";
   created_at: string;
-  status: string;
-  type?: string;
-  client_id?: string;
 }
 
 export default function AdminDashboard() {
@@ -69,9 +56,6 @@ export default function AdminDashboard() {
     associations: 0,
     users: 0,
     planUsage: 0,
-    userUsage: 0,
-    requestLimit: 0,
-    userLimit: 0,
   });
 
   const [associations, setAssociations] = useState<Association[]>([]);
@@ -83,7 +67,6 @@ export default function AdminDashboard() {
   });
 
   const [users, setUsers] = useState<AppUser[]>([]);
-  const [clients, setClients] = useState<AppUser[]>([]);
   const [newUser, setNewUser] = useState({
     email: "",
     full_name: "",
@@ -94,7 +77,6 @@ export default function AdminDashboard() {
   const [forms, setForms] = useState<Form[]>([]);
   const [newForm, setNewForm] = useState({
     name: "",
-    description: "",
     type: "",
     client_id: "",
   });
@@ -120,7 +102,7 @@ export default function AdminDashboard() {
     }
   };
 
-  // ================= STATS =================
+  // Statistici
   const loadStats = async () => {
     if (!profile?.company_id) return;
 
@@ -141,31 +123,27 @@ export default function AdminDashboard() {
 
     const { data: company } = await supabase
       .from("companies")
-      .select("request_limit, user_limit")
+      .select("request_limit")
       .eq("id", profile.company_id)
       .single();
 
-    const usageRequests =
+    const usagePercent =
       company && requestsCount
-        ? Math.min(Math.round((requestsCount / company.request_limit) * 100), 100)
-        : 0;
-    const usageUsers =
-      company && usersCount
-        ? Math.min(Math.round((usersCount / company.user_limit) * 100), 100)
+        ? Math.min(
+            Math.round((requestsCount / company.request_limit) * 100),
+            100
+          )
         : 0;
 
     setStats({
       requests: requestsCount || 0,
       associations: associationsCount || 0,
       users: usersCount || 0,
-      planUsage: usageRequests,
-      userUsage: usageUsers,
-      requestLimit: company?.request_limit || 0,
-      userLimit: company?.user_limit || 0,
+      planUsage: usagePercent,
     });
   };
 
-  // ================= ASSOCIATIONS =================
+  // Asociații
   const loadAssociations = async () => {
     if (!profile?.company_id) return;
     const { data, error } = await supabase
@@ -206,7 +184,7 @@ export default function AdminDashboard() {
     loadAssociations();
   };
 
-  // ================= USERS =================
+  // Utilizatori
   const loadUsers = async () => {
     if (!profile?.company_id) return;
     const { data, error } = await supabase
@@ -218,7 +196,6 @@ export default function AdminDashboard() {
       console.error("❌ Eroare fetch users:", error.message);
     }
     setUsers(data || []);
-    setClients((data || []).filter((u) => u.role === "client"));
   };
 
   const handleCreateUser = async () => {
@@ -232,7 +209,9 @@ export default function AdminDashboard() {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${import.meta.env.VITE_SUPABASE_ANON_KEY}`,
+          Authorization: `Bearer ${
+            import.meta.env.VITE_SUPABASE_ANON_KEY
+          }`,
         },
         body: JSON.stringify({
           email: newUser.email,
@@ -248,7 +227,12 @@ export default function AdminDashboard() {
     const data = await res.json();
     if (data.success) {
       alert("✅ User creat cu succes!");
-      setNewUser({ email: "", full_name: "", role: "client", association_id: "" });
+      setNewUser({
+        email: "",
+        full_name: "",
+        role: "client",
+        association_id: "",
+      });
       loadUsers();
     } else {
       alert("❌ Eroare la creare user: " + data.error);
@@ -261,12 +245,12 @@ export default function AdminDashboard() {
     loadUsers();
   };
 
-  // ================= FORMS =================
+  // Formulare
   const loadForms = async () => {
     if (!profile?.company_id) return;
     const { data, error } = await supabase
       .from("forms")
-      .select("id, name, description, created_at, status, type, client_id")
+      .select("id, name, type, client_id, status, created_at")
       .eq("company_id", profile.company_id);
 
     if (error) {
@@ -276,30 +260,29 @@ export default function AdminDashboard() {
   };
 
   const handleCreateForm = async () => {
-    if (!newForm.name.trim() || !newForm.client_id) {
+    if (!newForm.name || !newForm.client_id) {
       return alert("⚠️ Nume și client sunt obligatorii");
     }
 
     const { error } = await supabase.from("forms").insert({
       name: newForm.name,
-      description: newForm.description,
       type: newForm.type,
       client_id: newForm.client_id,
-      company_id: profile?.company_id,
-      fields: JSON.stringify([
-        { type: "textarea", label: "Descriere constatare" },
-        { type: "signature", label: "Semnătura reprezentant firmă" },
-        { type: "signature", label: "Semnătura client" },
-      ]),
       status: "open",
+      company_id: profile?.company_id,
     });
 
     if (error) {
       alert("❌ Eroare la creare formular: " + error.message);
     } else {
-      setNewForm({ name: "", description: "", type: "", client_id: "" });
+      setNewForm({ name: "", type: "", client_id: "" });
       loadForms();
     }
+  };
+
+  const handleCloseForm = async (id: string) => {
+    await supabase.from("forms").update({ status: "closed" }).eq("id", id);
+    loadForms();
   };
 
   const handleDeleteForm = async (id: string) => {
@@ -308,73 +291,22 @@ export default function AdminDashboard() {
     loadForms();
   };
 
-  const handleCloseForm = async (id: string) => {
-    if (!confirm("Sigur vrei să închizi acest formular?")) return;
-    const { error } = await supabase
-      .from("forms")
-      .update({ status: "closed" })
-      .eq("id", id);
-    if (error) {
-      alert("❌ Eroare la închiderea formularului: " + error.message);
-    } else {
-      loadForms();
-    }
-  };
-
-  // ================= EXPORT =================
   const exportCSV = () => {
-    const rows = [
-      ["ID", "Nume", "Tip", "Descriere", "Status", "Client", "Creat la"],
-      ...forms.map((f) => {
-        const client = clients.find((c) => c.id === f.client_id);
-        return [
-          f.id,
-          f.name,
-          f.type || "-",
-          f.description || "",
-          f.status,
-          client?.full_name || "-",
-          new Date(f.created_at).toLocaleDateString("ro-RO"),
-        ];
-      }),
-    ];
-    const csvContent =
-      "data:text/csv;charset=utf-8," +
-      rows.map((r) => r.join(",")).join("\n");
-    const link = document.createElement("a");
-    link.href = encodeURI(csvContent);
-    link.download = "formulare.csv";
-    link.click();
+    alert("📄 Export CSV în lucru...");
   };
 
   const exportPDF = () => {
-    const docContent = forms
-      .map((f) => {
-        const client = clients.find((c) => c.id === f.client_id);
-        return `Formular: ${f.name}\nTip: ${
-          f.type || "-"
-        }\nDescriere: ${f.description || "-"}\nStatus: ${
-          f.status
-        }\nClient: ${client?.full_name || "-"}\nCreat la: ${new Date(
-          f.created_at
-        ).toLocaleDateString("ro-RO")}\n\n`;
-      })
-      .join("");
-
-    const blob = new Blob([docContent], { type: "application/pdf" });
-    const link = document.createElement("a");
-    link.href = URL.createObjectURL(blob);
-    link.download = "formulare.pdf";
-    link.click();
+    alert("📄 Export PDF în lucru...");
   };
 
-  // ================= UI =================
   return (
     <div className="p-6 min-h-screen bg-gray-50">
       {/* Header */}
       <div className="flex justify-between items-center mb-8">
         <div>
-          <h1 className="text-3xl font-bold text-indigo-700">Admin Dashboard</h1>
+          <h1 className="text-3xl font-bold text-indigo-700">
+            Admin Dashboard
+          </h1>
           <p className="text-gray-500">
             Bine ai venit,{" "}
             <span className="font-semibold">{profile?.full_name}</span>
@@ -388,11 +320,14 @@ export default function AdminDashboard() {
         </button>
       </div>
 
-      {loading ? (
+      {/* Loader */}
+      {loading && (
         <div className="flex justify-center items-center py-10">
           <Loader2 className="animate-spin text-indigo-600" size={32} />
         </div>
-      ) : (
+      )}
+
+      {!loading && (
         <>
           {/* Statistici */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-10">
@@ -418,92 +353,53 @@ export default function AdminDashboard() {
             />
           </div>
 
-          {/* Grafic consum */}
-          <SectionCard title="Grafic consum plan" color="text-indigo-700">
-            <ResponsiveContainer width="100%" height={300}>
-              <LineChart
-                data={[
-                  {
-                    name: "Cereri",
-                    folosit: stats.requests,
-                    limita: stats.requestLimit,
-                  },
-                  {
-                    name: "Utilizatori",
-                    folosit: stats.users,
-                    limita: stats.userLimit,
-                  },
-                ]}
-              >
-                <CartesianGrid stroke="#ccc" />
-                <XAxis dataKey="name" />
-                <YAxis />
-                <Tooltip />
-                <Line type="monotone" dataKey="folosit" stroke="#4f46e5" />
-                <Line type="monotone" dataKey="limita" stroke="#ef4444" />
-              </LineChart>
-            </ResponsiveContainer>
-          </SectionCard>
-
           {/* Asociații */}
           <SectionCard title="Administrare Asociații" color="text-green-700">
-            {/* aici rămâne codul tău existent pentru Asociații */}
+            ...
           </SectionCard>
 
           {/* Utilizatori */}
           <SectionCard title="Administrare Utilizatori" color="text-blue-700">
-            {/* aici rămâne codul tău existent pentru Utilizatori */}
+            ...
           </SectionCard>
 
           {/* Formulare */}
           <SectionCard title="Administrare Formulare" color="text-purple-700">
             <div className="flex gap-4 mb-6 flex-wrap">
-              <select
+              <input
+                type="text"
+                placeholder="Nume Formular"
+                value={newForm.name}
+                onChange={(e) =>
+                  setNewForm({ ...newForm, name: e.target.value })
+                }
+                className="border p-2 rounded w-1/4 min-w-[200px]"
+              />
+              <input
+                type="text"
+                placeholder="Tip Formular"
                 value={newForm.type}
-                onChange={(e) => setNewForm({ ...newForm, type: e.target.value })}
-                className="border p-2 rounded"
-              >
-                <option value="">Selectează tip formular</option>
-                <option value="constatare">Constatare tehnică</option>
-                <option value="revizie">Revizie anuală</option>
-                <option value="interventie">Intervenție service</option>
-              </select>
-
+                onChange={(e) =>
+                  setNewForm({ ...newForm, type: e.target.value })
+                }
+                className="border p-2 rounded w-1/4 min-w-[200px]"
+              />
               <select
                 value={newForm.client_id}
                 onChange={(e) =>
                   setNewForm({ ...newForm, client_id: e.target.value })
                 }
-                className="border p-2 rounded w-1/3"
+                className="border p-2 rounded"
               >
-                <option value="">Selectează client</option>
-                {clients.map((c) => {
-                  const assoc = associations.find((a) => a.id === c.association_id);
-                  return (
+                <option value="">Selectează Client</option>
+                {users
+                  .filter((u) => u.role === "client")
+                  .map((c) => (
                     <option key={c.id} value={c.id}>
-                      {c.full_name} ({assoc?.name || "fără asociație"})
+                      {c.full_name}
                     </option>
-                  );
-                })}
+                  ))}
               </select>
-
-              <input
-                type="text"
-                placeholder="Nume formular"
-                value={newForm.name}
-                onChange={(e) => setNewForm({ ...newForm, name: e.target.value })}
-                className="border p-2 rounded w-1/4 min-w-[200px]"
-              />
-              <input
-                type="text"
-                placeholder="Descriere"
-                value={newForm.description}
-                onChange={(e) =>
-                  setNewForm({ ...newForm, description: e.target.value })
-                }
-                className="border p-2 rounded w-1/2 min-w-[200px]"
-              />
-
               <button
                 onClick={handleCreateForm}
                 className="bg-purple-500 hover:bg-purple-600 text-white px-4 py-2 rounded-lg flex items-center gap-2"
@@ -522,4 +418,77 @@ export default function AdminDashboard() {
                       <th className="p-2 border">Nume</th>
                       <th className="p-2 border">Tip</th>
                       <th className="p-2 border">Client</th>
-                      <th className="p-2 border">Status</th
+                      <th className="p-2 border">Status</th>
+                      <th className="p-2 border">Creat la</th>
+                      <th className="p-2 border">Acțiuni</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {forms.map((f) => {
+                      const client = users.find((c) => c.id === f.client_id);
+                      return (
+                        <tr key={f.id} className="border-t">
+                          <td className="p-2">{f.name}</td>
+                          <td className="p-2">{f.type || "-"}</td>
+                          <td className="p-2">{client?.full_name || "-"}</td>
+                          <td className="p-2">
+                            {f.status === "closed"
+                              ? "Închis (read-only)"
+                              : "Deschis"}
+                          </td>
+                          <td className="p-2">
+                            {new Date(f.created_at).toLocaleDateString("ro-RO")}
+                          </td>
+                          <td className="p-2 flex gap-2">
+                            {f.status === "open" ? (
+                              <>
+                                <button
+                                  onClick={() => handleCloseForm(f.id)}
+                                  className="text-orange-500 hover:text-orange-700"
+                                >
+                                  Închide
+                                </button>
+                                <button
+                                  onClick={() => handleDeleteForm(f.id)}
+                                  className="text-red-500 hover:text-red-700 flex items-center gap-1"
+                                >
+                                  <Trash2 size={16} /> Șterge
+                                </button>
+                              </>
+                            ) : (
+                              <span className="text-gray-400 italic">
+                                Doar vizualizare
+                              </span>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </SectionCard>
+
+          {/* Export Formulare */}
+          <SectionCard title="Export Formulare" color="text-pink-700">
+            <div className="flex gap-4">
+              <button
+                onClick={exportCSV}
+                className="bg-pink-500 hover:bg-pink-600 text-white px-4 py-2 rounded-lg"
+              >
+                Export CSV
+              </button>
+              <button
+                onClick={exportPDF}
+                className="bg-indigo-500 hover:bg-indigo-600 text-white px-4 py-2 rounded-lg"
+              >
+                Export PDF
+              </button>
+            </div>
+          </SectionCard>
+        </>
+      )}
+    </div>
+  );
+}
